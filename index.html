@@ -81,52 +81,46 @@ const stores = [
     const zoomControl = new kakao.maps.ZoomControl();
     map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
-    stores.forEach((store) => {
-      geocoder.addressSearch(store.address, function(result, status) {
-        if (status === kakao.maps.services.Status.OK) {
-          const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+stores.forEach((store) => {
+  geocoder.addressSearch(store.address, function(result, status) {
+    if (status === kakao.maps.services.Status.OK) {
+      const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
 
-          const marker = new kakao.maps.Marker({
-            map: map,
-            position: coords
-          });
-
-          bounds.extend(coords);
-          map.setBounds(bounds);
-
-          const content = `
-            <div class="info-box">
-              <h3>${store.name}</h3>
-              <div><strong>주소</strong> ${store.address}</div>
-              <div><strong>전화</strong> ${store.phone}</div>
-              <div><strong>담당자</strong> ${store.manager}</div>
-              <div><strong>품목</strong> ${store.items}</div>
-              <div><strong>비고</strong> ${store.note}</div>
-            </div>
-          `;
-
-          const infowindow = new kakao.maps.InfoWindow({
-  content: content,
-  removable: true
-});
-
-kakao.maps.event.addListener(marker, "click", function() {
-  if (openedInfowindow === infowindow) {
-    infowindow.close();
-    openedInfowindow = null;
-    return;
-  }
-
-  if (openedInfowindow) {
-    openedInfowindow.close();
-  }
-
-  infowindow.open(map, marker);
-  openedInfowindow = infowindow;
-});
-        }
+      const marker = new kakao.maps.Marker({
+        map: map,
+        position: coords
       });
-    });
+
+      bounds.extend(coords);
+      map.setBounds(bounds);
+
+      const content = `
+        <div class="info-box">
+          <h3>${store.name}</h3>
+          <div><strong>주소</strong> ${store.address}</div>
+          <div><strong>전화</strong> ${store.phone}</div>
+          <div><strong>담당자</strong> ${store.manager}</div>
+          <div><strong>품목</strong> ${store.items}</div>
+          <div><strong>비고</strong> ${store.note}</div>
+        </div>
+      `;
+
+      const infowindow = new kakao.maps.InfoWindow({
+        content: content,
+        removable: true
+      });
+
+      kakao.maps.event.addListener(marker, "click", function() {
+        if (openedInfowindow) {
+          openedInfowindow.close();
+        }
+
+        infowindow.open(map, marker);
+        openedInfowindow = infowindow;
+      });
+    }
+  });
+});
 
   </script>
 </body>
