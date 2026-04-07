@@ -127,12 +127,6 @@ kakao.maps.event.addListener(marker, "click", function() {
         }
       });
     });
-    kakao.maps.event.addListener(map, "click", function() {
-  if (openedInfowindow) {
-    openedInfowindow.close();
-    openedInfowindow = null;
-  }
-});
     document.addEventListener("click", function() {
   if (openedInfowindow) {
     openedInfowindow.close();
