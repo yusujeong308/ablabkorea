@@ -103,22 +103,29 @@
   removable: true
 });
 
-         kakao.maps.event.addListener(marker, "click", function() {
+kakao.maps.event.addListener(marker, "click", function() {
+  if (openedInfowindow === infowindow) {
+    infowindow.close();
+    openedInfowindow = null;
+    return;
+  }
+
   if (openedInfowindow) {
     openedInfowindow.close();
   }
+
   infowindow.open(map, marker);
   openedInfowindow = infowindow;
 });
         }
       });
     });
-  </script>
-  kakao.maps.event.addListener(map, "click", function() {
+    kakao.maps.event.addListener(map, "click", function() {
   if (openedInfowindow) {
     openedInfowindow.close();
     openedInfowindow = null;
   }
 });
+  </script>
 </body>
 </html>
