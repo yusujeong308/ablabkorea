@@ -40,33 +40,32 @@
   <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
 
   <script>
-    const stores = [
-      {
-        name: "스니커스(snickers)홍대",
-        address: "서울시 마포구 와우산로17길 24, 1층(서교동)",
-        phone: "010-6658-7712",
-        manager: "최낙현",
-        items: "팜프리츠 감자튀김",
-        note: "주 3회 납품"
-      },
-      {
-        name: "필앤필버거(PHIL&FILL BURGER)",
-        address: "서울특별시 강남구 테헤란로 142 (역삼동) 지상1층",
-        phone: "010-5493-0732",
-        manager: "최낙현",
-        items: "팜프리츠 감자튀김, 해시브라운",
-        note: "주 3회 납품"
-      },
-      {
+const stores = [
+  {
+    name: "스니커스(snickers)홍대",
+    address: "서울시 마포구 와우산로17길 24, 1층(서교동)",
+    phone: "010-6658-7712",
+    manager: "최낙현",
+    items: "팜프리츠 감자튀김",
+    note: "주 3회 납품"
+  },
+  {
+    name: "필앤필버거(PHIL&FILL BURGER)",
+    address: "서울특별시 강남구 테헤란로 142 (역삼동) 지상1층",
+    phone: "010-5493-0732",
+    manager: "최낙현",
+    items: "팜프리츠 감자튀김, 해시브라운",
+    note: "주 3회 납품"
+  },
+  {
     name: "필앤필버거 김포점",
     address: "경기도 김포시 유현로 233",
     phone: "010-5493-0732",
-    manager: "최낙",
+    manager: "최낙현",
     items: "팜프리츠 감자튀김",
     note: "주 2회 납품"
   }
-      ];
-
+];
     const mapContainer = document.getElementById("map");
     const mapOption = {
       center: new kakao.maps.LatLng(36.5, 127.8),
