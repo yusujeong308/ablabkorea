@@ -348,16 +348,16 @@ stores.forEach((store) => {
       bounds.extend(coords);
       map.setBounds(bounds);
 
-      const content = `
-        <div class="info-box">
-          <h3>${store.name}</h3>
-          <div><strong>주소</strong> ${store.address}</div>
-          <div><strong>전화</strong> ${store.phone}</div>
-          <div><strong>담당자</strong> ${store.manager}</div>
-          <div><strong>품목</strong> ${store.items}</div>
-          <div><strong>비고</strong> ${store.note}</div>
-        </div>
-      `;
+const content = `
+  <div class="info-box">
+    <h3>${store.name}</h3>
+    <div><strong>주소</strong> <span>${store.address}</span></div>
+    <div><strong>전화</strong> <span>${store.phone}</span></div>
+    <div><strong>담당자</strong> <span>${store.manager}</span></div>
+    <div><strong>품목</strong> <span>${store.items}</span></div>
+    <div><strong>비고</strong> <span>${store.note}</span></div>
+  </div>
+`;
 
       const infowindow = new kakao.maps.InfoWindow({
         content: content,
