@@ -321,26 +321,17 @@
       });
     });
 
-    window.searchStore = function() {
-      const input = document.getElementById("searchInput");
-      const keyword = normalizeText(input.value);
-
-      if (!keyword) {
-        alert("매장명을 입력하세요.");
-        return;
-      }
-
-      if (storeMarkers.length === 0) {
-        alert("매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
-        return;
-      }
-
-      const found = storeMarkers.window.searchStore = function() {
+window.searchStore = function() {
   const input = document.getElementById("searchInput");
   const keyword = normalizeText(input.value);
 
   if (!keyword) {
     alert("매장명을 입력하세요.");
+    return;
+  }
+
+  if (storeMarkers.length === 0) {
+    alert("매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
     return;
   }
 
@@ -354,23 +345,7 @@
   }
 
   renderSearchResults(results);
-};(function(store) {
-        return store.normalizedName.includes(keyword);
-      });
-
-      if (!found) {
-        alert("해당 매장을 찾을 수 없습니다.");
-        return;
-      }
-
-      selectStore(found);
-    };
-
-    document.getElementById("searchInput").addEventListener("keyup", function(event) {
-      if (event.key === "Enter") {
-        searchStore();
-      }
-    });
+};
 function renderSearchResults(results) {
   const list = document.getElementById("storeList");
   list.innerHTML = "";
