@@ -290,7 +290,21 @@
     const storeMarkers = [];
     let openedInfowindow = null;
     let selectedStoreName = null;
+const managerMarkerColors = {
+  "NH": "red",
+  "KT": "blue",
+  "SY": "green"
+};
 
+function getMarkerImageByManager(manager) {
+  const color = managerMarkerColors[manager] || "yellow";
+
+  const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+  const imageSize = new kakao.maps.Size(32, 32);
+  const imageOption = { offset: new kakao.maps.Point(16, 32) };
+
+  return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+}
     function normalizeText(text) {
       return String(text || "")
         .toLowerCase()
@@ -546,10 +560,11 @@
 
             const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
 
-            const marker = new kakao.maps.Marker({
-              map: map,
-              position: coords
-            });
+const marker = new kakao.maps.Marker({
+  map: map,
+  position: coords,
+  image: getMarkerImageByManager(store.manager)
+});
 
             const content = `
               <div class="info-box">
