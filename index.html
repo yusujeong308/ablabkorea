@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABLAB 거래처 지도</title>
+  <title>ABLAB 매장 거래처 지도</title>
   <style>
     * {
       box-sizing: border-box;
@@ -335,7 +335,26 @@
         return;
       }
 
-      const found = storeMarkers.find(function(store) {
+      const found = storeMarkers.window.searchStore = function() {
+  const input = document.getElementById("searchInput");
+  const keyword = normalizeText(input.value);
+
+  if (!keyword) {
+    alert("매장명을 입력하세요.");
+    return;
+  }
+
+  const results = storeMarkers.filter(function(store) {
+    return store.normalizedName.includes(keyword);
+  });
+
+  if (results.length === 0) {
+    alert("해당 매장을 찾을 수 없습니다.");
+    return;
+  }
+
+  renderSearchResults(results);
+};(function(store) {
         return store.normalizedName.includes(keyword);
       });
 
@@ -352,6 +371,26 @@
         searchStore();
       }
     });
+    function renderSearchResults(results) {
+  const list = document.getElementById("storeList");
+  list.innerHTML = "";
+
+  results.forEach(function(store) {
+    const div = document.createElement("div");
+    div.className = "store-item";
+
+    div.innerHTML = `
+      <div class="store-item-title">${store.name}</div>
+      <div class="store-item-address">${store.address}</div>
+    `;
+
+    div.addEventListener("click", function() {
+      selectStore(store);
+    });
+
+    list.appendChild(div);
+  });
+}
   </script>
 </body>
 </html>
