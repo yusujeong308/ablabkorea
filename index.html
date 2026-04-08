@@ -237,21 +237,24 @@
         </div>
 
         <div class="filter-grid">
-          <div class="filter-box">
-            <select id="regionFilter" onchange="applyFilters()">
-              <option value="">전체 지역</option>
-            </select>
-          </div>
-
+          <!-- 1. 담당자 -->
           <div class="filter-box">
             <select id="managerFilter" onchange="applyFilters()">
               <option value="">전체 담당자</option>
             </select>
           </div>
 
+          <!-- 2. 브랜드 -->
           <div class="filter-box">
             <select id="brandFilter" onchange="applyFilters()">
               <option value="">전체 브랜드</option>
+            </select>
+          </div>
+
+          <!-- 3. 지역 -->
+          <div class="filter-box">
+            <select id="regionFilter" onchange="applyFilters()">
+              <option value="">전체 지역</option>
             </select>
           </div>
         </div>
@@ -278,15 +281,10 @@
   <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
 
   <script>
-    // =========================
-    // 1. 매장 데이터
-    // region은 직접 넣지 않음
-    // 주소 기준으로 자동 추출
-    // =========================
     const stores = [
       {
         name: "스니커스(snickers)홍대",
-        brand: "",
+        brand: "스니커스",
         address: "서울시 마포구 와우산로17길 24, 1층(서교동)",
         phone: "010-6658-7712",
         manager: "최낙현",
@@ -298,7 +296,7 @@
         brand: "필앤필버거",
         address: "서울특별시 강남구 테헤란로 142 (역삼동) 지상1층",
         phone: "010-5493-0732",
-        manager: "김광태",
+        manager: "김세연",
         items: "팜프리츠 감자튀김, 해시브라운",
         note: "주 3회 납품"
       },
@@ -307,7 +305,7 @@
         brand: "필앤필버거",
         address: "경기도 김포시 유현로 233, 1층 114호(풍무동, 풍무역파크트루엘)",
         phone: "010-5493-0732",
-        manager: "김세연",
+        manager: "김광태",
         items: "팜프리츠 감자튀김",
         note: "주 2회 납품"
       }
@@ -351,7 +349,6 @@
 
     // =========================
     // 4. 주소에서 시/도 단위 자동 추출
-    // 사용자가 region을 따로 등록하지 않아도 됨
     // =========================
     function extractRegion(address) {
       const text = String(address || "").trim();
@@ -376,8 +373,6 @@
       if (text.startsWith("경남")) return "경남";
       if (text.startsWith("제주")) return "제주";
 
-      // "경기도 김포시", "서울특별시", "인천광역시" 같은 경우 대부분 위에서 걸러짐
-      // 그 외 예외 주소는 앞 단어를 잘라서 사용
       const firstWord = text.split(" ")[0] || "";
       return firstWord;
     }
@@ -398,27 +393,20 @@
 
     // =========================
     // 6. 필터 옵션 렌더링
-    // 지역은 address에서 자동 추출한 값으로 생성
+    // 순서: 담당자 -> 브랜드 -> 지역
     // =========================
     function renderFilterOptions() {
-      const regionFilter = document.getElementById("regionFilter");
       const managerFilter = document.getElementById("managerFilter");
       const brandFilter = document.getElementById("brandFilter");
+      const regionFilter = document.getElementById("regionFilter");
 
-      const regions = createUniqueOptions(stores.map(store => extractRegion(store.address)));
       const managers = createUniqueOptions(stores.map(store => store.manager));
       const brands = createUniqueOptions(stores.map(store => store.brand));
+      const regions = createUniqueOptions(stores.map(store => extractRegion(store.address)));
 
-      regionFilter.innerHTML = '<option value="">전체 지역</option>';
       managerFilter.innerHTML = '<option value="">전체 담당자</option>';
       brandFilter.innerHTML = '<option value="">전체 브랜드</option>';
-
-      regions.forEach(region => {
-        const option = document.createElement("option");
-        option.value = region;
-        option.textContent = region;
-        regionFilter.appendChild(option);
-      });
+      regionFilter.innerHTML = '<option value="">전체 지역</option>';
 
       managers.forEach(manager => {
         const option = document.createElement("option");
@@ -432,6 +420,13 @@
         option.value = brand;
         option.textContent = brand;
         brandFilter.appendChild(option);
+      });
+
+      regions.forEach(region => {
+        const option = document.createElement("option");
+        option.value = region;
+        option.textContent = region;
+        regionFilter.appendChild(option);
       });
     }
 
@@ -466,13 +461,13 @@
       const box = document.getElementById("selectedStore");
       box.innerHTML = `
         <h2>${store.name}</h2>
+        <div class="row"><span class="label">담당자</span>${store.manager}</div>
         <div class="row"><span class="label">브랜드</span>${store.brand}</div>
+        <div class="row"><span class="label">지역</span>${store.region}</div>
         <div class="row"><span class="label">주소</span>${store.address}</div>
         <div class="row"><span class="label">전화</span>${store.phone}</div>
-        <div class="row"><span class="label">담당자</span>${store.manager}</div>
         <div class="row"><span class="label">품목</span>${store.items}</div>
         <div class="row"><span class="label">비고</span>${store.note}</div>
-        <div class="row"><span class="label">지역</span>${store.region}</div>
       `;
     }
 
@@ -502,7 +497,7 @@
 
     // =========================
     // 9. 왼쪽 목록 렌더링
-    // 품목 필터는 없지만 표시 자체는 유지 가능
+    // 표시 순서도 담당자 -> 브랜드 -> 지역으로 정리
     // =========================
     function renderStoreList(items) {
       const list = document.getElementById("storeList");
@@ -516,7 +511,7 @@
           <div class="store-item-title">${store.name}</div>
           <div class="store-item-address">${store.address}</div>
           <div class="store-item-meta">
-            브랜드: ${store.brand} / 지역: ${store.region} / 담당자: ${store.manager}<br />
+            담당자: ${store.manager} / 브랜드: ${store.brand} / 지역: ${store.region}<br />
             품목: ${store.items}
           </div>
         `;
@@ -575,20 +570,15 @@
 
     // =========================
     // 11. 필터 로직
-    // 지역은 store.region (자동 생성값) 사용
-    // 브랜드 필터만 유지
+    // 순서: 담당자 -> 브랜드 -> 지역
     // =========================
     function getFilteredStores() {
       const keyword = normalizeText(document.getElementById("searchInput").value);
-      const region = document.getElementById("regionFilter").value;
       const manager = document.getElementById("managerFilter").value;
       const brand = document.getElementById("brandFilter").value;
+      const region = document.getElementById("regionFilter").value;
 
       let results = [...storeMarkers];
-
-      if (region) {
-        results = results.filter(store => store.region === region);
-      }
 
       if (manager) {
         results = results.filter(store => store.manager === manager);
@@ -598,10 +588,14 @@
         results = results.filter(store => store.brand === brand);
       }
 
+      if (region) {
+        results = results.filter(store => store.region === region);
+      }
+
       if (keyword) {
         results = results.filter(store => {
           const targetText = normalizeText(
-            `${store.name} ${store.brand} ${store.address} ${store.manager} ${store.region}`
+            `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.region}`
           );
           return targetText.includes(keyword);
         });
@@ -617,15 +611,15 @@
       }
 
       const keyword = normalizeText(document.getElementById("searchInput").value);
-      const region = document.getElementById("regionFilter").value;
       const manager = document.getElementById("managerFilter").value;
       const brand = document.getElementById("brandFilter").value;
+      const region = document.getElementById("regionFilter").value;
 
       const results = getFilteredStores();
 
       closeOpenedInfowindow();
 
-      if (!keyword && !region && !manager && !brand) {
+      if (!keyword && !manager && !brand && !region) {
         selectedStoreName = null;
         updateMarkers(storeMarkers);
         renderStoreList(storeMarkers);
@@ -652,9 +646,9 @@
 
     function resetFilters() {
       document.getElementById("searchInput").value = "";
-      document.getElementById("regionFilter").value = "";
       document.getElementById("managerFilter").value = "";
       document.getElementById("brandFilter").value = "";
+      document.getElementById("regionFilter").value = "";
 
       selectedStoreName = null;
       closeOpenedInfowindow();
@@ -665,7 +659,6 @@
 
     // =========================
     // 12. 매장 초기화
-    // 여기서 region을 자동 생성해서 넣음
     // =========================
     function initializeStores() {
       let loadedCount = 0;
@@ -691,13 +684,13 @@
             const content = `
               <div class="info-box">
                 <h3>${store.name}</h3>
+                <div><strong>담당자</strong> <span>${store.manager}</span></div>
                 <div><strong>브랜드</strong> <span>${store.brand}</span></div>
+                <div><strong>지역</strong> <span>${region}</span></div>
                 <div><strong>주소</strong> <span>${store.address}</span></div>
                 <div><strong>전화</strong> <span>${store.phone}</span></div>
-                <div><strong>담당자</strong> <span>${store.manager}</span></div>
                 <div><strong>품목</strong> <span>${store.items}</span></div>
                 <div><strong>비고</strong> <span>${store.note}</span></div>
-                <div><strong>지역</strong> <span>${region}</span></div>
               </div>
             `;
 
