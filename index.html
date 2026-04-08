@@ -239,94 +239,60 @@
       `;
     }
 
-    function renderStoreList(items) {
-      const list = document.getElementById("storeList");
-      list.innerHTML = "";
+<script>
+function renderStoreList(items) {
+  const list = document.getElementById("storeList");
+  list.innerHTML = "";
 
-      items.forEach((store) => {
-        const div = document.createElement("div");
-        div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
-        div.innerHTML = `
-          <div class="store-item-title">${store.name}</div>
-          <div class="store-item-address">${store.address}</div>
-        `;
-        div.addEventListener("click", function() {
-          selectStore(store);
-        });
-        list.appendChild(div);
-      });
-    }
-
-    function selectStore(store) {
-      selectedStoreName = store.name;
-
-      map.setCenter(store.coords);
-      map.setLevel(3);
-
-      if (openedInfowindow) {
-        openedInfowindow.close();
-      }
-
-      store.infowindow.open(map, store.marker);
-      openedInfowindow = store.infowindow;
-
-      renderSelectedStore(store);
-      renderStoreList(storeMarkers);
-    }
-
-    stores.forEach((store) => {
-      geocoder.addressSearch(store.address, function(result, status) {
-        if (status === kakao.maps.services.Status.OK) {
-          const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-
-          const marker = new kakao.maps.Marker({
-            map: map,
-            position: coords
-          });
-
-          bounds.extend(coords);
-          map.setBounds(bounds);
-
-          const content = `
-            <div class="info-box">
-              <h3>${store.name}</h3>
-              <div><strong>주소</strong> ${store.address}</div>
-              <div><strong>전화</strong> ${store.phone}</div>
-              <div><strong>담당자</strong> ${store.manager}</div>
-              <div><strong>품목</strong> ${store.items}</div>
-              <div><strong>비고</strong> ${store.note}</div>
-            </div>
-          `;
-
-          const infowindow = new kakao.maps.InfoWindow({
-            content: content,
-            removable: true
-          });
-
-          const storeData = {
-            ...store,
-            normalizedName: normalizeText(store.name),
-            marker: marker,
-            infowindow: infowindow,
-            coords: coords
-          };
-
-          kakao.maps.event.addListener(marker, "click", function() {
-            selectStore(storeData);
-          });
-
-          storeMarkers.push(storeData);
-          renderStoreList(storeMarkers);
-        }
-      });
+  items.forEach((store) => {
+    const div = document.createElement("div");
+    div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
+    div.innerHTML = `
+      <div class="store-item-title">${store.name}</div>
+      <div class="store-item-address">${store.address}</div>
+    `;
+    div.addEventListener("click", function() {
+      selectStore(store);
     });
+    list.appendChild(div);
+  });
+}
+
+function renderSearchResults(results) {
+  const list = document.getElementById("storeList");
+  list.innerHTML = "";
+
+  const selectedBox = document.getElementById("selectedStore");
+  selectedBox.innerHTML = `
+    <h2>검색 결과 ${results.length}개</h2>
+    <div class="row">아래 목록에서 원하는 매장을 선택하세요.</div>
+  `;
+
+  results.forEach((store) => {
+    const div = document.createElement("div");
+    div.className = "store-item";
+    div.innerHTML = `
+      <div class="store-item-title">${store.name}</div>
+      <div class="store-item-address">${store.address}</div>
+    `;
+    div.addEventListener("click", function() {
+      selectStore(store);
+    });
+    list.appendChild(div);
+  });
+}
 
 window.searchStore = function() {
   const input = document.getElementById("searchInput");
   const keyword = normalizeText(input.value);
 
   if (!keyword) {
-    alert("매장명을 입력하세요.");
+    renderStoreList(storeMarkers);
+    const selectedBox = document.getElementById("selectedStore");
+    selectedBox.innerHTML = `
+      <h2>매장을 선택하세요</h2>
+      <div class="row">왼쪽 목록이나 지도 핀을 누르면 상세 정보가 표시됩니다.</div>
+    `;
     return;
   }
 
@@ -340,34 +306,24 @@ window.searchStore = function() {
   });
 
   if (results.length === 0) {
-    alert("해당 매장을 찾을 수 없습니다.");
+    const list = document.getElementById("storeList");
+    list.innerHTML = "";
+    const selectedBox = document.getElementById("selectedStore");
+    selectedBox.innerHTML = `
+      <h2>검색 결과 없음</h2>
+      <div class="row">해당 매장을 찾을 수 없습니다.</div>
+    `;
     return;
   }
 
   renderSearchResults(results);
 };
-    
-function renderSearchResults(results) {
-  const list = document.getElementById("storeList");
-  list.innerHTML = "";
 
-  results.forEach(function(store) {
-    const div = document.createElement("div");
-    div.className = "store-item";
-
-    div.innerHTML = `
-      <div class="store-item-title">${store.name}</div>
-      <div class="store-item-address">${store.address}</div>
-    `;
-
-    div.addEventListener("click", function() {
-      selectStore(store);
-    });
-
-    list.appendChild(div);
-  });
-}
-    
+document.getElementById("searchInput").addEventListener("keyup", function(event) {
+  if (event.key === "Enter") {
+    searchStore();
+  }
+}); 
   </script>
 </body>
 </html>
