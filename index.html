@@ -162,7 +162,7 @@
         <h1 class="sidebar-title">거래처 매장 지도</h1>
         <div class="search-box">
           <input type="text" id="searchInput" placeholder="매장명을 입력하세요" />
-          <button onclick="searchStore()">검색</button>
+          <button onclick="applyFilters()">검색</button>
         </div>
         
         <div style="margin-top: 10px;">
@@ -378,6 +378,7 @@ const content = `
 
       const storeData = {
         ...store,
+        region: store.region,
         normalizedName: normalizeText(store.name),
         marker: marker,
         infowindow: infowindow,
@@ -395,7 +396,7 @@ const content = `
 });
 document.getElementById("searchInput").addEventListener("keyup", function(event) {
   if (event.key === "Enter") {
-    searchStore();
+    searchInput();
     if (keyword) {
     results = results.filter(function(store) {
       return store.normalizedName.includes(keyword);
