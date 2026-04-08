@@ -164,6 +164,15 @@
           <input type="text" id="searchInput" placeholder="매장명을 입력하세요" />
           <button onclick="searchStore()">검색</button>
         </div>
+        
+        <div style="margin-top: 10px;">
+  <select id="regionFilter" onchange="applyFilters()" style="width: 100%; padding: 10px; border: 1px solid #d9d9d9; border-radius: 8px;">
+    <option value="">전체 지역</option>
+    <option value="서울">서울</option>
+    <option value="경기">경기</option>
+    <option value="인천">인천</option>
+  </select>
+</div>
       </div>
 
       <div class="selected-store" id="selectedStore">
@@ -190,6 +199,7 @@
         manager: "최낙현",
         items: "팜프리츠 감자튀김",
         note: "주 3회 납품"
+          region: "서울"
       },
       {
         name: "필앤필버거(PHIL&FILL BURGER)",
@@ -198,6 +208,7 @@
         manager: "최낙현",
         items: "팜프리츠 감자튀김, 해시브라운",
         note: "주 3회 납품"
+          region: "서울"
       },
       {
         name: "필앤필버거 김포점",
@@ -206,6 +217,7 @@
         manager: "최낙현",
         items: "팜프리츠 감자튀김",
         note: "주 2회 납품"
+          region: "김포"
       }
     ];
 
@@ -384,6 +396,24 @@ const content = `
 document.getElementById("searchInput").addEventListener("keyup", function(event) {
   if (event.key === "Enter") {
     searchStore();
+    if (keyword) {
+    results = results.filter(function(store) {
+      return store.normalizedName.includes(keyword);
+    });
+  }
+
+  if (results.length === 0) {
+    const list = document.getElementById("storeList");
+    list.innerHTML = "";
+    const selectedBox = document.getElementById("selectedStore");
+    selectedBox.innerHTML = `
+      <h2>검색 결과 없음</h2>
+      <div class="row">조건에 맞는 매장이 없습니다.</div>
+    `;
+    return;
+  }
+
+  renderSearchResults(results);
   }
 });
   </script>
