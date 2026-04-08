@@ -5,43 +5,139 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>우리 회사 거래처 지도</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
     }
 
-    #map {
+    .layout {
+      display: flex;
       width: 100%;
       height: 100vh;
     }
 
+    .sidebar {
+      width: 360px;
+      min-width: 360px;
+      background: #ffffff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 20px 16px 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .sidebar-title {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
     .search-box {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 10;
-      background: white;
-      padding: 10px;
-      border-radius: 8px
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      display: flex;
+      gap: 8px;
     }
 
     .search-box input {
-      width: 220px;
-      padding: 8px;
+      flex: 1;
+      padding: 10px;
       font-size: 14px;
+      border: 1px solid #d9d9d9;
+      border-radius: 8px;
     }
 
     .search-box button {
-      padding: 8px 12px;
+      padding: 10px 14px;
       font-size: 14px;
-      margin-left: 6px;
+      border: none;
+      background: #222;
+      color: white;
+      border-radius: 8px;
       cursor: pointer;
+    }
+
+    .selected-store {
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      background: #fafafa;
+    }
+
+    .selected-store h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .selected-store .row {
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .selected-store .label {
+      display: inline-block;
+      width: 72px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .store-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .store-item {
+      padding: 12px;
+      border: 1px solid #ececec;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+      background: white;
+    }
+
+    .store-item:hover {
+      background: #f7f7f7;
+    }
+
+    .store-item.active {
+      border-color: #222;
+      background: #f3f3f3;
+    }
+
+    .store-item-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .store-item-address {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .map-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
     }
 
     .info-box {
       padding: 12px;
-      min-width: 240px;
+      min-width: 220px;
       line-height: 1.6;
       font-size: 14px;
     }
@@ -58,12 +154,28 @@
   </style>
 </head>
 <body>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="매장명을 입력하세요" />
-    <button onclick="searchStore()">검색</button>
-  </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="sidebar-title">거래처 매장 지도</h1>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="매장명을 입력하세요" />
+          <button onclick="searchStore()">검색</button>
+        </div>
+      </div>
 
-  <div id="map"></div>
+      <div class="selected-store" id="selectedStore">
+        <h2>매장을 선택하세요</h2>
+        <div class="row">왼쪽 목록이나 지도 핀을 누르면 상세 정보가 표시됩니다.</div>
+      </div>
+
+      <div class="store-list" id="storeList"></div>
+    </aside>
+
+    <div class="map-wrap">
+      <div id="map"></div>
+    </div>
+  </div>
 
   <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
 
@@ -87,8 +199,7 @@
       },
       {
         name: "필앤필버거 김포점",
-        address: "경기도 김포시 유현로 233, 1층 114호(풍무동, 풍무역파크트루엘)
-",
+        address: "경기도 김포시 유현로 233",
         phone: "010-5493-0732",
         manager: "최낙현",
         items: "팜프리츠 감자튀김",
@@ -107,12 +218,60 @@
     const bounds = new kakao.maps.LatLngBounds();
     const storeMarkers = [];
     let openedInfowindow = null;
+    let selectedStoreName = null;
 
     const zoomControl = new kakao.maps.ZoomControl();
     map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
     function normalizeText(text) {
       return String(text || "").toLowerCase().replace(/\s+/g, "");
+    }
+
+    function renderSelectedStore(store) {
+      const box = document.getElementById("selectedStore");
+      box.innerHTML = `
+        <h2>${store.name}</h2>
+        <div class="row"><span class="label">주소</span>${store.address}</div>
+        <div class="row"><span class="label">전화</span>${store.phone}</div>
+        <div class="row"><span class="label">담당자</span>${store.manager}</div>
+        <div class="row"><span class="label">품목</span>${store.items}</div>
+        <div class="row"><span class="label">비고</span>${store.note}</div>
+      `;
+    }
+
+    function renderStoreList(items) {
+      const list = document.getElementById("storeList");
+      list.innerHTML = "";
+
+      items.forEach((store) => {
+        const div = document.createElement("div");
+        div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
+        div.innerHTML = `
+          <div class="store-item-title">${store.name}</div>
+          <div class="store-item-address">${store.address}</div>
+        `;
+        div.addEventListener("click", function() {
+          selectStore(store);
+        });
+        list.appendChild(div);
+      });
+    }
+
+    function selectStore(store) {
+      selectedStoreName = store.name;
+
+      map.setCenter(store.coords);
+      map.setLevel(3);
+
+      if (openedInfowindow) {
+        openedInfowindow.close();
+      }
+
+      store.infowindow.open(map, store.marker);
+      openedInfowindow = store.infowindow;
+
+      renderSelectedStore(store);
+      renderStoreList(storeMarkers);
     }
 
     stores.forEach((store) => {
@@ -144,28 +303,20 @@
             removable: true
           });
 
-          kakao.maps.event.addListener(marker, "click", function() {
-            if (openedInfowindow === infowindow) {
-              infowindow.close();
-              openedInfowindow = null;
-              return;
-            }
-
-            if (openedInfowindow) {
-              openedInfowindow.close();
-            }
-
-            infowindow.open(map, marker);
-            openedInfowindow = infowindow;
-          });
-
-          storeMarkers.push({
-            name: store.name,
+          const storeData = {
+            ...store,
             normalizedName: normalizeText(store.name),
             marker: marker,
             infowindow: infowindow,
             coords: coords
+          };
+
+          kakao.maps.event.addListener(marker, "click", function() {
+            selectStore(storeData);
           });
+
+          storeMarkers.push(storeData);
+          renderStoreList(storeMarkers);
         }
       });
     });
@@ -193,15 +344,7 @@
         return;
       }
 
-      map.setCenter(found.coords);
-      map.setLevel(3);
-
-      if (openedInfowindow) {
-        openedInfowindow.close();
-      }
-
-      found.infowindow.open(map, found.marker);
-      openedInfowindow = found.infowindow;
+      selectStore(found);
     };
 
     document.getElementById("searchInput").addEventListener("keyup", function(event) {
