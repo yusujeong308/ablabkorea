@@ -22,8 +22,8 @@
     }
 
     .sidebar {
-      width: 380px;
-      min-width: 380px;
+      width: 390px;
+      min-width: 390px;
       background: #ffffff;
       border-right: 1px solid #e5e5e5;
       display: flex;
@@ -98,6 +98,7 @@
       padding: 16px;
       border-bottom: 1px solid #f0f0f0;
       background: #fafafa;
+      min-height: 170px;
     }
 
     .selected-store h2 {
@@ -116,6 +117,7 @@
       width: 72px;
       font-weight: 700;
       color: #333;
+      vertical-align: top;
     }
 
     .store-list {
@@ -172,6 +174,37 @@
       height: 100%;
     }
 
+    .map-legend {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.8;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      z-index: 10;
+      min-width: 160px;
+    }
+
+    .map-legend-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .map-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .map-legend-item img {
+      width: 18px;
+      height: 18px;
+    }
+
     .info-box {
       padding: 16px;
       width: 360px;
@@ -199,26 +232,26 @@
         <h1 class="sidebar-title">거래처 매장 지도</h1>
 
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="매장명 / 주소 / 품목 검색" />
+          <input type="text" id="searchInput" placeholder="매장명 / 브랜드 / 주소 검색" />
           <button onclick="applyFilters()">검색</button>
         </div>
 
         <div class="filter-grid">
           <div class="filter-box">
             <select id="regionFilter" onchange="applyFilters()">
-              <option value="">전체 담당자</option>
-            </select>
-          </div>
-
-          <div class="filter-box">
-            <select id="managerFilter" onchange="applyFilters()">
               <option value="">전체 지역</option>
             </select>
           </div>
 
           <div class="filter-box">
-            <select id="itemFilter" onchange="applyFilters()">
-              <option value="">전체 품목</option>
+            <select id="managerFilter" onchange="applyFilters()">
+              <option value="">전체 담당자</option>
+            </select>
+          </div>
+
+          <div class="filter-box">
+            <select id="brandFilter" onchange="applyFilters()">
+              <option value="">전체 브랜드</option>
             </select>
           </div>
         </div>
@@ -238,43 +271,51 @@
 
     <div class="map-wrap">
       <div id="map"></div>
+      <div class="map-legend" id="mapLegend"></div>
     </div>
   </div>
 
   <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
 
   <script>
-    // 예시 데이터
+    // =========================
+    // 1. 매장 데이터
+    // region은 직접 넣지 않음
+    // 주소 기준으로 자동 추출
+    // =========================
     const stores = [
       {
         name: "스니커스(snickers)홍대",
+        brand: "스니커스",
         address: "서울시 마포구 와우산로17길 24, 1층(서교동)",
         phone: "010-6658-7712",
         manager: "최낙현",
         items: "팜프리츠 감자튀김",
-        note: "주 3회 납품",
-        region: "서울"
+        note: "주 3회 납품"
       },
       {
         name: "필앤필버거(PHIL&FILL BURGER)",
+        brand: "필앤필버거",
         address: "서울특별시 강남구 테헤란로 142 (역삼동) 지상1층",
         phone: "010-5493-0732",
         manager: "김광태",
         items: "팜프리츠 감자튀김, 해시브라운",
-        note: "주 3회 납품",
-        region: "서울"
+        note: "주 3회 납품"
       },
       {
         name: "필앤필버거 김포점",
+        brand: "필앤필버거",
         address: "경기도 김포시 유현로 233, 1층 114호(풍무동, 풍무역파크트루엘)",
         phone: "010-5493-0732",
         manager: "김세연",
         items: "팜프리츠 감자튀김",
-        note: "주 2회 납품",
-        region: "김포"
+        note: "주 2회 납품"
       }
     ];
 
+    // =========================
+    // 2. 지도 기본 설정
+    // =========================
     const mapContainer = document.getElementById("map");
     const mapOption = {
       center: new kakao.maps.LatLng(36.5, 127.8),
@@ -290,21 +331,60 @@
     const storeMarkers = [];
     let openedInfowindow = null;
     let selectedStoreName = null;
-const managerMarkerColors = {
-  "김세연": "red",
-  "김광태": "blue",
-  "최낙현": "green"
-};
 
-function getMarkerImageByManager(manager) {
-  const color = managerMarkerColors[manager] || "yellow";
+    // =========================
+    // 3. 담당자별 핀 색상 설정
+    // =========================
+    const managerMarkerColors = {
+      "김세연": "red",
+      "김광태": "blue",
+      "최낙현": "green"
+    };
 
-  const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
-  const imageSize = new kakao.maps.Size(32, 32);
-  const imageOption = { offset: new kakao.maps.Point(16, 32) };
+    function getMarkerImageByManager(manager) {
+      const color = managerMarkerColors[manager] || "yellow";
+      const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+      const imageSize = new kakao.maps.Size(32, 32);
+      const imageOption = { offset: new kakao.maps.Point(16, 32) };
+      return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+    }
 
-  return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-}
+    // =========================
+    // 4. 주소에서 시/도 단위 자동 추출
+    // 사용자가 region을 따로 등록하지 않아도 됨
+    // =========================
+    function extractRegion(address) {
+      const text = String(address || "").trim();
+
+      if (!text) return "기타";
+
+      if (text.startsWith("서울")) return "서울";
+      if (text.startsWith("경기")) return "경기";
+      if (text.startsWith("인천")) return "인천";
+      if (text.startsWith("부산")) return "부산";
+      if (text.startsWith("대구")) return "대구";
+      if (text.startsWith("광주")) return "광주";
+      if (text.startsWith("대전")) return "대전";
+      if (text.startsWith("울산")) return "울산";
+      if (text.startsWith("세종")) return "세종";
+      if (text.startsWith("강원")) return "강원";
+      if (text.startsWith("충북")) return "충북";
+      if (text.startsWith("충남")) return "충남";
+      if (text.startsWith("전북")) return "전북";
+      if (text.startsWith("전남")) return "전남";
+      if (text.startsWith("경북")) return "경북";
+      if (text.startsWith("경남")) return "경남";
+      if (text.startsWith("제주")) return "제주";
+
+      // "경기도 김포시", "서울특별시", "인천광역시" 같은 경우 대부분 위에서 걸러짐
+      // 그 외 예외 주소는 앞 단어를 잘라서 사용
+      const firstWord = text.split(" ")[0] || "";
+      return firstWord;
+    }
+
+    // =========================
+    // 5. 공통 유틸 함수
+    // =========================
     function normalizeText(text) {
       return String(text || "")
         .toLowerCase()
@@ -312,31 +392,26 @@ function getMarkerImageByManager(manager) {
         .trim();
     }
 
-    function parseItems(itemsText) {
-      return String(itemsText || "")
-        .split(",")
-        .map(item => item.trim())
-        .filter(Boolean);
-    }
-
     function createUniqueOptions(arr) {
       return [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
     }
 
+    // =========================
+    // 6. 필터 옵션 렌더링
+    // 지역은 address에서 자동 추출한 값으로 생성
+    // =========================
     function renderFilterOptions() {
       const regionFilter = document.getElementById("regionFilter");
       const managerFilter = document.getElementById("managerFilter");
-      const itemFilter = document.getElementById("itemFilter");
+      const brandFilter = document.getElementById("brandFilter");
 
-      const regions = createUniqueOptions(stores.map(store => store.region));
+      const regions = createUniqueOptions(stores.map(store => extractRegion(store.address)));
       const managers = createUniqueOptions(stores.map(store => store.manager));
-      const items = createUniqueOptions(
-        stores.flatMap(store => parseItems(store.items))
-      );
+      const brands = createUniqueOptions(stores.map(store => store.brand));
 
       regionFilter.innerHTML = '<option value="">전체 지역</option>';
       managerFilter.innerHTML = '<option value="">전체 담당자</option>';
-      itemFilter.innerHTML = '<option value="">전체 품목</option>';
+      brandFilter.innerHTML = '<option value="">전체 브랜드</option>';
 
       regions.forEach(region => {
         const option = document.createElement("option");
@@ -352,18 +427,46 @@ function getMarkerImageByManager(manager) {
         managerFilter.appendChild(option);
       });
 
-      items.forEach(item => {
+      brands.forEach(brand => {
         const option = document.createElement("option");
-        option.value = item;
-        option.textContent = item;
-        itemFilter.appendChild(option);
+        option.value = brand;
+        option.textContent = brand;
+        brandFilter.appendChild(option);
       });
     }
 
+    // =========================
+    // 7. 범례 렌더링
+    // =========================
+    function renderLegend() {
+      const legend = document.getElementById("mapLegend");
+      const managers = createUniqueOptions(stores.map(store => store.manager));
+
+      let html = '<div class="map-legend-title">담당자 핀 색상</div>';
+
+      managers.forEach(manager => {
+        const color = managerMarkerColors[manager] || "yellow";
+        const icon = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+
+        html += `
+          <div class="map-legend-item">
+            <img src="${icon}" alt="${manager}">
+            <span>${manager}</span>
+          </div>
+        `;
+      });
+
+      legend.innerHTML = html;
+    }
+
+    // =========================
+    // 8. 왼쪽 상세 정보
+    // =========================
     function renderSelectedStore(store) {
       const box = document.getElementById("selectedStore");
       box.innerHTML = `
         <h2>${store.name}</h2>
+        <div class="row"><span class="label">브랜드</span>${store.brand}</div>
         <div class="row"><span class="label">주소</span>${store.address}</div>
         <div class="row"><span class="label">전화</span>${store.phone}</div>
         <div class="row"><span class="label">담당자</span>${store.manager}</div>
@@ -397,6 +500,10 @@ function getMarkerImageByManager(manager) {
       `;
     }
 
+    // =========================
+    // 9. 왼쪽 목록 렌더링
+    // 품목 필터는 없지만 표시 자체는 유지 가능
+    // =========================
     function renderStoreList(items) {
       const list = document.getElementById("storeList");
       list.innerHTML = "";
@@ -404,11 +511,12 @@ function getMarkerImageByManager(manager) {
       items.forEach((store) => {
         const div = document.createElement("div");
         div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
+
         div.innerHTML = `
           <div class="store-item-title">${store.name}</div>
           <div class="store-item-address">${store.address}</div>
           <div class="store-item-meta">
-            지역: ${store.region} / 담당자: ${store.manager}<br />
+            브랜드: ${store.brand} / 지역: ${store.region} / 담당자: ${store.manager}<br />
             품목: ${store.items}
           </div>
         `;
@@ -421,6 +529,9 @@ function getMarkerImageByManager(manager) {
       });
     }
 
+    // =========================
+    // 10. 마커 제어
+    // =========================
     function updateMarkers(results) {
       const bounds = new kakao.maps.LatLngBounds();
 
@@ -462,11 +573,16 @@ function getMarkerImageByManager(manager) {
       renderStoreList(currentResults);
     }
 
+    // =========================
+    // 11. 필터 로직
+    // 지역은 store.region (자동 생성값) 사용
+    // 브랜드 필터만 유지
+    // =========================
     function getFilteredStores() {
       const keyword = normalizeText(document.getElementById("searchInput").value);
       const region = document.getElementById("regionFilter").value;
       const manager = document.getElementById("managerFilter").value;
-      const item = document.getElementById("itemFilter").value;
+      const brand = document.getElementById("brandFilter").value;
 
       let results = [...storeMarkers];
 
@@ -478,14 +594,14 @@ function getMarkerImageByManager(manager) {
         results = results.filter(store => store.manager === manager);
       }
 
-      if (item) {
-        results = results.filter(store => parseItems(store.items).includes(item));
+      if (brand) {
+        results = results.filter(store => store.brand === brand);
       }
 
       if (keyword) {
         results = results.filter(store => {
           const targetText = normalizeText(
-            `${store.name} ${store.address} ${store.items} ${store.manager} ${store.region}`
+            `${store.name} ${store.brand} ${store.address} ${store.manager} ${store.region}`
           );
           return targetText.includes(keyword);
         });
@@ -503,13 +619,13 @@ function getMarkerImageByManager(manager) {
       const keyword = normalizeText(document.getElementById("searchInput").value);
       const region = document.getElementById("regionFilter").value;
       const manager = document.getElementById("managerFilter").value;
-      const item = document.getElementById("itemFilter").value;
+      const brand = document.getElementById("brandFilter").value;
 
       const results = getFilteredStores();
 
       closeOpenedInfowindow();
 
-      if (!keyword && !region && !manager && !item) {
+      if (!keyword && !region && !manager && !brand) {
         selectedStoreName = null;
         updateMarkers(storeMarkers);
         renderStoreList(storeMarkers);
@@ -538,7 +654,7 @@ function getMarkerImageByManager(manager) {
       document.getElementById("searchInput").value = "";
       document.getElementById("regionFilter").value = "";
       document.getElementById("managerFilter").value = "";
-      document.getElementById("itemFilter").value = "";
+      document.getElementById("brandFilter").value = "";
 
       selectedStoreName = null;
       closeOpenedInfowindow();
@@ -547,6 +663,10 @@ function getMarkerImageByManager(manager) {
       renderDefaultMessage();
     }
 
+    // =========================
+    // 12. 매장 초기화
+    // 여기서 region을 자동 생성해서 넣음
+    // =========================
     function initializeStores() {
       let loadedCount = 0;
       let successCount = 0;
@@ -560,21 +680,24 @@ function getMarkerImageByManager(manager) {
 
             const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
 
-const marker = new kakao.maps.Marker({
-  map: map,
-  position: coords,
-  image: getMarkerImageByManager(store.manager)
-});
+            const marker = new kakao.maps.Marker({
+              map: map,
+              position: coords,
+              image: getMarkerImageByManager(store.manager)
+            });
+
+            const region = extractRegion(store.address);
 
             const content = `
               <div class="info-box">
                 <h3>${store.name}</h3>
+                <div><strong>브랜드</strong> <span>${store.brand}</span></div>
                 <div><strong>주소</strong> <span>${store.address}</span></div>
                 <div><strong>전화</strong> <span>${store.phone}</span></div>
                 <div><strong>담당자</strong> <span>${store.manager}</span></div>
                 <div><strong>품목</strong> <span>${store.items}</span></div>
                 <div><strong>비고</strong> <span>${store.note}</span></div>
-                <div><strong>지역</strong> <span>${store.region}</span></div>
+                <div><strong>지역</strong> <span>${region}</span></div>
               </div>
             `;
 
@@ -585,11 +708,7 @@ const marker = new kakao.maps.Marker({
 
             const storeData = {
               ...store,
-              normalizedName: normalizeText(store.name),
-              normalizedAddress: normalizeText(store.address),
-              normalizedItems: normalizeText(store.items),
-              normalizedManager: normalizeText(store.manager),
-              normalizedRegion: normalizeText(store.region),
+              region,
               marker,
               infowindow,
               coords
@@ -616,13 +735,20 @@ const marker = new kakao.maps.Marker({
       });
     }
 
+    // =========================
+    // 13. 이벤트 바인딩
+    // =========================
     document.getElementById("searchInput").addEventListener("keyup", function(event) {
       if (event.key === "Enter") {
         applyFilters();
       }
     });
 
+    // =========================
+    // 14. 실행
+    // =========================
     renderFilterOptions();
+    renderLegend();
     renderDefaultMessage();
     initializeStores();
   </script>
