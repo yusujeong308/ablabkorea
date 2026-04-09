@@ -789,37 +789,48 @@
     // 11. 필터 로직
     // 순서: 담당자 -> 브랜드 -> 지역
     // =========================
-    function getFilteredStores() {
-      const keyword = normalizeText(document.getElementById("searchInput").value);
-      const manager = document.getElementById("managerFilter").value;
-      const brand = document.getElementById("brandFilter").value;
-      const region = document.getElementById("regionFilter").value;
+function getCurrentFilterValues() {
+  return {
+    keyword: normalizeText(document.getElementById("searchInput").value),
+    manager: document.getElementById("managerFilter").value,
+    brand: document.getElementById("brandFilter").value,
+    region: document.getElementById("regionFilter").value
+  };
+}
 
-      let results = [...storeMarkers];
+function getFilteredStores(filters = {}) {
+  const {
+    keyword = "",
+    manager = "",
+    brand = "",
+    region = ""
+  } = filters;
 
-      if (manager) {
-        results = results.filter(store => store.manager === manager);
-      }
+  let results = [...storeMarkers];
 
-      if (brand) {
-        results = results.filter(store => store.brand === brand);
-      }
+  if (manager) {
+    results = results.filter(store => store.manager === manager);
+  }
 
-      if (region) {
-        results = results.filter(store => store.region === region);
-      }
+  if (brand) {
+    results = results.filter(store => store.brand === brand);
+  }
 
-      if (keyword) {
-        results = results.filter(store => {
-          const targetText = normalizeText(
-            `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.region}`
-          );
-          return targetText.includes(keyword);
-        });
-      }
+  if (region) {
+    results = results.filter(store => store.region === region);
+  }
 
-      return results;
-    }
+  if (keyword) {
+    results = results.filter(store => {
+      const targetText = normalizeText(
+        `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.region}`
+      );
+      return targetText.includes(keyword);
+    });
+  }
+
+  return results;
+}
 
     function applyFilters() {
       if (storeMarkers.length === 0) {
