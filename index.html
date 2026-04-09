@@ -969,17 +969,20 @@
       roadviewPickerOverlay.setPosition(mouseEvent.latLng);
     });
 
-    kakao.maps.event.addListener(map, "click", function(mouseEvent) {
-      if (!isRoadviewPickMode) return;
+kakao.maps.event.addListener(map, "click", function(mouseEvent) {
+  if (!isRoadviewPickMode) return;
 
-      const clickedPosition = mouseEvent.latLng;
-      if (roadviewPickerOverlay) {
-        roadviewPickerOverlay.setPosition(clickedPosition);
-      }
+  const clickedPosition = mouseEvent.latLng;
 
-      openRoadviewAtPosition(clickedPosition, "선택 위치 로드뷰");
-    });
+  // 클릭 순간 핀 위치 맞춘 뒤 바로 숨김
+  if (roadviewPickerOverlay) {
+    roadviewPickerOverlay.setPosition(clickedPosition);
+    roadviewPickerOverlay.setMap(null);
+  }
 
+  openRoadviewAtPosition(clickedPosition, "선택 위치 로드뷰");
+});
+    
     document.getElementById("searchInput").addEventListener("keyup", function(event) {
       if (event.key === "Enter") {
         applyFilters();
