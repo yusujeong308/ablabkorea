@@ -571,7 +571,7 @@
       <div class="top-buttons">
         <button type="button" onclick="startNavigationFromRoute()">길찾기</button>
         <button type="button" id="roadviewToggle" onclick="toggleRoadviewPanel()">로드뷰</button>
-        <button type="button" id="roadviewPickToggle" class="roadview-pick-btn" onclick="toggleRoadviewPickMode()">찍기</button>
+        <button type="button" id="roadviewPickToggle" class="roadview-pick-btn" onclick="toggleRoadviewPickMode()">로드뷰 찍기</button>
       </div>
 
       <div id="map"></div>
@@ -1028,7 +1028,7 @@
 
       const button = document.getElementById("roadviewPickToggle");
       button.classList.remove("active");
-      button.textContent = "찍기";
+      button.textContent = "로드뷰 찍기";
 
       map.removeOverlayMapTypeId(kakao.maps.MapTypeId.ROADVIEW);
 
