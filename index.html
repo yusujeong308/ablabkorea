@@ -234,14 +234,14 @@
       white-space: nowrap;
     }
 
-    .top-buttons {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      gap: 12px;
-      z-index: 20;
-    }
+.top-buttons {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  z-index: 20;
+}
 
     .top-buttons button {
       padding: 10px 14px;
@@ -550,11 +550,12 @@
         <h3>길찾기 설정</h3>
         <div class="route-row"><span class="route-label">출발지</span><span id="routeStartText">선택 안 됨</span></div>
         <div class="route-row"><span class="route-label">도착지</span><span id="routeEndText">선택 안 됨</span></div>
-        <div class="route-actions">
-          <button type="button" onclick="setSelectedAsStart()">출발지 지정</button>
-          <button type="button" onclick="setSelectedAsEnd()">도착지 지정</button>
-          <button type="button" class="secondary" onclick="clearRouteSelection()">초기화</button>
-        </div>
+<div class="route-actions">
+  <button type="button" onclick="setSelectedAsStart()">출발지 지정</button>
+  <button type="button" onclick="setSelectedAsEnd()">도착지 지정</button>
+  <button type="button" onclick="startNavigationFromRoute()">길찾기</button>
+  <button type="button" class="secondary" onclick="clearRouteSelection()">초기화</button>
+</div>
       </div>
 
       <div class="selected-store" id="selectedStore">
@@ -568,11 +569,10 @@
     <div class="map-wrap">
       <button id="sidebarToggle" class="sidebar-toggle" onclick="toggleSidebar()">필터 닫기</button>
 
-      <div class="top-buttons">
-        <button type="button" onclick="startNavigationFromRoute()">길찾기</button>
-        <button type="button" id="roadviewToggle" onclick="toggleRoadviewPanel()">로드뷰</button>
-        <button type="button" id="roadviewPickToggle" class="roadview-pick-btn" onclick="toggleRoadviewPickMode()">로드뷰 찍기</button>
-      </div>
+<div class="top-buttons">
+  <button type="button" id="roadviewToggle" onclick="toggleRoadviewPanel()">로드뷰</button>
+  <button type="button" id="roadviewPickToggle" class="roadview-pick-btn" onclick="toggleRoadviewPickMode()">찍기</button>
+</div>
 
       <div id="map"></div>
 
