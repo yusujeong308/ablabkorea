@@ -466,11 +466,7 @@
       const selectedBrand = current.brand;
       const selectedRegion = current.region;
 
-      const managerCandidates = getFilteredBaseStores({
-        keyword: current.keyword,
-        brand: current.brand,
-        region: current.region
-      });
+      const managerCandidates = storesForFilter;
 
       const brandCandidates = getFilteredBaseStores({
         keyword: current.keyword,
