@@ -925,40 +925,35 @@
       roadviewPickerOverlay.setMap(map);
     }
 
-    function stopRoadviewPickMode() {
-      isRoadviewPickMode = false;
-      isRoadviewPickerVisible = false;
+function startNavigationToSelectedStore() {
+  const selectedStore = storeMarkers.find(store => store.name === selectedStoreName);
 
-      document.getElementById("roadviewPickToggle").classList.remove("active");
-      document.getElementById("roadviewPickToggle").textContent = "로드뷰 찍기";
+  if (!selectedStore) {
+    alert("먼저 매장을 선택해 주세요.");
+    return;
+  }
 
-      map.removeOverlayMapTypeId(kakao.maps.MapTypeId.ROADVIEW);
+  if (!window.Kakao || !Kakao.isInitialized()) {
+    alert("카카오 SDK 초기화가 필요합니다.");
+    return;
+  }
 
-      if (roadviewPickerOverlay) {
-        roadviewPickerOverlay.setMap(null);
-      }
-    }
+  // 모바일 카카오내비 앱용
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    Kakao.Navi.start({
+      name: selectedStore.name,
+      x: selectedStore.coords.getLng(),
+      y: selectedStore.coords.getLat(),
+      coordType: "wgs84",
+      vehicleType: 1,
+      rpOption: 100
+    });
+    return;
+  }
 
-    function toggleRoadviewPickMode() {
-      if (isRoadviewPickMode) {
-        stopRoadviewPickMode();
-      } else {
-        startRoadviewPickMode();
-      }
-    }
-
-    function startNavigationToSelectedStore() {
-      const selectedStore = storeMarkers.find(store => store.name === selectedStoreName);
-
-      if (!selectedStore) {
-        alert("먼저 매장을 선택해 주세요.");
-        return;
-      }
-
-      if (!window.Kakao || !Kakao.isInitialized()) {
-        alert("카카오 SDK 초기화가 필요합니다.");
-        return;
-      }
+  // PC에서는 앱 길안내 대신 목적지 확인용 안내
+  alert("PC에서는 카카오내비 앱 길안내가 지원되지 않습니다. 모바일에서 이용해 주세요.");
+}
 
       const center = map.getCenter();
 
