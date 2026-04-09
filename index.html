@@ -21,16 +21,23 @@
       height: 100vh;
     }
 
-.sidebar {
-  width: 390px;
-  min-width: 390px;
-  background: #ffffff;
-  border-right: 1px solid #e5e5e5;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: width 0.3s ease, min-width 0.3s ease;
-}
+    .sidebar {
+      width: 390px;
+      min-width: 390px;
+      background: #ffffff;
+      border-right: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.3s ease, min-width 0.3s ease;
+    }
+
+    .sidebar.collapsed {
+      width: 0;
+      min-width: 0;
+      border-right: none;
+      overflow: hidden;
+    }
 
     .sidebar-header {
       padding: 20px 16px 12px;
@@ -59,7 +66,8 @@
     }
 
     .search-box button,
-    .filter-actions button {
+    .filter-actions button,
+    .roadview-header button {
       padding: 10px 14px;
       font-size: 14px;
       border: none;
@@ -175,6 +183,77 @@
       height: 100%;
     }
 
+    .sidebar-toggle {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 20;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    .roadview-toggle {
+      position: absolute;
+      top: 20px;
+      left: 125px;
+      z-index: 20;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    .roadview-wrap {
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      width: 420px;
+      height: 320px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      z-index: 20;
+      display: none;
+    }
+
+    .roadview-wrap.open {
+      display: block;
+    }
+
+    .roadview-header {
+      height: 44px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .roadview-header button {
+      width: auto;
+      padding: 6px 10px;
+    }
+
+    #roadview {
+      width: 100%;
+      height: calc(100% - 44px);
+    }
+
     .map-legend {
       position: absolute;
       right: 20px;
@@ -224,27 +303,6 @@
       width: 70px;
       vertical-align: top;
     }
-    .sidebar.collapsed {
-  width: 0;
-  min-width: 0;
-  border-right: none;
-  overflow: hidden;
-}
-
-.sidebar-toggle {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 20;
-  padding: 10px 14px;
-  font-size: 14px;
-  border: none;
-  border-radius: 8px;
-  background: #222;
-  color: white;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-}
   </style>
 </head>
 <body>
@@ -291,22 +349,27 @@
       <div class="store-list" id="storeList"></div>
     </aside>
 
-<div class="map-wrap">
-  <button id="sidebarToggle" class="sidebar-toggle" onclick="toggleSidebar()">
-    필터 닫기
-  </button>
+    <div class="map-wrap">
+      <button id="sidebarToggle" class="sidebar-toggle" onclick="toggleSidebar()">필터 닫기</button>
+      <button id="roadviewToggle" class="roadview-toggle" onclick="toggleRoadviewPanel()">로드뷰 열기</button>
 
-  <div id="map"></div>
-  <div class="map-legend" id="mapLegend"></div>
-</div>
+      <div id="map"></div>
+
+      <div id="roadviewWrap" class="roadview-wrap">
+        <div class="roadview-header">
+          <span>로드뷰</span>
+          <button type="button" onclick="closeRoadviewPanel()">닫기</button>
+        </div>
+        <div id="roadview"></div>
+      </div>
+
+      <div class="map-legend" id="mapLegend"></div>
+    </div>
   </div>
 
   <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
 
   <script>
-    // =========================
-    // 1. 원본 데이터
-    // =========================
     const stores = [
       {
         name: "스니커스(snickers)홍대",
@@ -346,9 +409,6 @@
       }
     ];
 
-    // =========================
-    // 2. 지도 설정
-    // =========================
     const mapContainer = document.getElementById("map");
     const mapOption = {
       center: new kakao.maps.LatLng(36.5, 127.8),
@@ -360,9 +420,14 @@
     const zoomControl = new kakao.maps.ZoomControl();
     map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
+    const roadviewContainer = document.getElementById("roadview");
+    const roadview = new kakao.maps.Roadview(roadviewContainer);
+    const roadviewClient = new kakao.maps.RoadviewClient();
+
     let storeMarkers = [];
     let openedInfowindow = null;
     let selectedStoreName = null;
+    let currentRoadviewStore = null;
 
     const managerMarkerColors = {
       "김세연": "red",
@@ -371,9 +436,6 @@
       "이승우": "yellow"
     };
 
-    // =========================
-    // 3. 유틸
-    // =========================
     function normalizeText(text) {
       return String(text || "")
         .toLowerCase()
@@ -428,10 +490,6 @@
       };
     }
 
-    // =========================
-    // 4. 필터용 원본 데이터
-    // storeMarkers가 아니라 stores 기준으로 계산
-    // =========================
     const storesForFilter = stores.map(store => ({
       ...store,
       region: extractRegion(store.address)
@@ -477,10 +535,6 @@
       return storeMarkers.filter(store => names.has(store.name));
     }
 
-    // =========================
-    // 5. 필터 옵션 렌더링
-    // 각 필터는 자기 자신 제외한 나머지 조건으로 옵션 계산
-    // =========================
     function renderFilterOptions() {
       const managerFilter = document.getElementById("managerFilter");
       const brandFilter = document.getElementById("brandFilter");
@@ -548,9 +602,6 @@
       }
     }
 
-    // =========================
-    // 6. 범례
-    // =========================
     function renderLegend() {
       const legend = document.getElementById("mapLegend");
       const managers = createUniqueOptions(stores.map(store => store.manager));
@@ -572,9 +623,6 @@
       legend.innerHTML = html;
     }
 
-    // =========================
-    // 7. UI 렌더링
-    // =========================
     function renderSelectedStore(store) {
       const box = document.getElementById("selectedStore");
 
@@ -622,38 +670,35 @@
       `;
     }
 
-function renderStoreList(items) {
-  const list = document.getElementById("storeList");
-  list.innerHTML = "";
+    function renderStoreList(items) {
+      const list = document.getElementById("storeList");
+      list.innerHTML = "";
 
-  const sortedItems = [...items].sort((a, b) =>
-    String(a.name || "").localeCompare(String(b.name || ""), "ko")
-  );
+      const sortedItems = [...items].sort((a, b) =>
+        String(a.name || "").localeCompare(String(b.name || ""), "ko")
+      );
 
-  sortedItems.forEach((store) => {
-    const div = document.createElement("div");
-    div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
+      sortedItems.forEach((store) => {
+        const div = document.createElement("div");
+        div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
 
-    div.innerHTML = `
-      <div class="store-item-title">${store.name}</div>
-      <div class="store-item-address">${store.address}</div>
-      <div class="store-item-meta">
-        담당자: ${store.manager || "-"} / 브랜드: ${store.brand || "-"} / 지역: ${store.region || "-"}<br />
-        품목: ${store.items || "-"}
-      </div>
-    `;
+        div.innerHTML = `
+          <div class="store-item-title">${store.name}</div>
+          <div class="store-item-address">${store.address}</div>
+          <div class="store-item-meta">
+            담당자: ${store.manager || "-"} / 브랜드: ${store.brand || "-"} / 지역: ${store.region || "-"}<br />
+            품목: ${store.items || "-"}
+          </div>
+        `;
 
-    div.addEventListener("click", function() {
-      selectStore(store);
-    });
+        div.addEventListener("click", function() {
+          selectStore(store);
+        });
 
-    list.appendChild(div);
-  });
-}
+        list.appendChild(div);
+      });
+    }
 
-    // =========================
-    // 8. 지도 제어
-    // =========================
     function updateMarkers(results) {
       const bounds = new kakao.maps.LatLngBounds();
 
@@ -678,6 +723,53 @@ function renderStoreList(items) {
       }
     }
 
+    function openRoadviewForStore(store) {
+      const wrap = document.getElementById("roadviewWrap");
+      const toggleBtn = document.getElementById("roadviewToggle");
+
+      currentRoadviewStore = store;
+
+      roadviewClient.getNearestPanoId(store.coords, 50, function(panoId) {
+        if (!panoId) {
+          alert("이 매장 주변에는 로드뷰가 없습니다.");
+          return;
+        }
+
+        wrap.classList.add("open");
+        toggleBtn.textContent = "로드뷰 닫기";
+
+        roadview.setPanoId(panoId, store.coords);
+
+        setTimeout(() => {
+          roadview.relayout();
+        }, 100);
+      });
+    }
+
+    function closeRoadviewPanel() {
+      const wrap = document.getElementById("roadviewWrap");
+      const toggleBtn = document.getElementById("roadviewToggle");
+
+      wrap.classList.remove("open");
+      toggleBtn.textContent = "로드뷰 열기";
+    }
+
+    function toggleRoadviewPanel() {
+      const wrap = document.getElementById("roadviewWrap");
+
+      if (wrap.classList.contains("open")) {
+        closeRoadviewPanel();
+        return;
+      }
+
+      if (currentRoadviewStore) {
+        openRoadviewForStore(currentRoadviewStore);
+        return;
+      }
+
+      alert("먼저 매장을 선택해 주세요.");
+    }
+
     function selectStore(store) {
       selectedStoreName = store.name;
 
@@ -693,11 +785,10 @@ function renderStoreList(items) {
 
       const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
       renderStoreList(currentResults);
+
+      openRoadviewForStore(store);
     }
 
-    // =========================
-    // 9. 필터 적용
-    // =========================
     function applyFilters() {
       if (storeMarkers.length === 0) {
         alert("매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
@@ -750,25 +841,24 @@ function renderStoreList(items) {
       renderStoreList(storeMarkers);
       renderDefaultMessage();
     }
-function toggleSidebar() {
-  const sidebar = document.querySelector(".sidebar");
-  const toggleButton = document.getElementById("sidebarToggle");
 
-  sidebar.classList.toggle("collapsed");
+    function toggleSidebar() {
+      const sidebar = document.querySelector(".sidebar");
+      const toggleButton = document.getElementById("sidebarToggle");
 
-  if (sidebar.classList.contains("collapsed")) {
-    toggleButton.textContent = "필터 열기";
-  } else {
-    toggleButton.textContent = "필터 닫기";
-  }
+      sidebar.classList.toggle("collapsed");
 
-  setTimeout(() => {
-    map.relayout();
-  }, 300);
-}
-    // =========================
-    // 10. 초기화
-    // =========================
+      if (sidebar.classList.contains("collapsed")) {
+        toggleButton.textContent = "필터 열기";
+      } else {
+        toggleButton.textContent = "필터 닫기";
+      }
+
+      setTimeout(() => {
+        map.relayout();
+      }, 300);
+    }
+
     function initializeStores() {
       let loadedCount = 0;
       let successCount = 0;
@@ -838,20 +928,13 @@ function toggleSidebar() {
         });
       });
     }
-    
 
-    // =========================
-    // 11. 이벤트
-    // =========================
     document.getElementById("searchInput").addEventListener("keyup", function(event) {
       if (event.key === "Enter") {
         applyFilters();
       }
     });
 
-    // =========================
-    // 12. 실행
-    // =========================
     initializeStores();
   </script>
 </body>
