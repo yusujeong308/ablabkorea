@@ -216,12 +216,10 @@
       height: 100%;
     }
 
-    .sidebar-toggle,
-    .navi-toggle,
-    .roadview-toggle,
-    .roadview-pick-toggle {
+    .sidebar-toggle {
       position: absolute;
       top: 20px;
+      left: 20px;
       z-index: 20;
       padding: 10px 14px;
       font-size: 14px;
@@ -236,23 +234,30 @@
       white-space: nowrap;
     }
 
-    .sidebar-toggle {
-      left: 20px;
+    .top-buttons {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 12px;
+      z-index: 20;
     }
 
-    .navi-toggle {
-      right: 250px;
+    .top-buttons button {
+      padding: 10px 14px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+      min-width: 90px;
+      text-align: center;
+      white-space: nowrap;
     }
 
-    .roadview-toggle {
-      right: 160px;
-    }
-
-    .roadview-pick-toggle {
-      right: 50px;
-    }
-
-    .roadview-pick-toggle.active {
+    .roadview-pick-btn.active {
       background: #0b63ce;
     }
 
@@ -312,9 +317,25 @@
       height: calc(100% - 44px);
     }
 
-    .map-legend {
+    .legend-toggle {
       position: absolute;
       right: 20px;
+      bottom: 20px;
+      z-index: 20;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 999px;
+      background: #222;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    .map-legend {
+      position: absolute;
+      right: 64px;
       bottom: 20px;
       background: rgba(255, 255, 255, 0.96);
       border: 1px solid #ddd;
@@ -325,6 +346,13 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
       z-index: 10;
       min-width: 160px;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .map-legend.collapsed {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(10px);
     }
 
     .map-legend-title {
@@ -412,30 +440,24 @@
         min-height: auto;
       }
 
-      .sidebar-toggle,
-      .navi-toggle,
-      .roadview-toggle,
-      .roadview-pick-toggle {
+      .sidebar-toggle {
         top: 12px;
+        left: 12px;
         padding: 8px 10px;
         font-size: 12px;
         min-width: 70px;
       }
 
-      .sidebar-toggle {
-        left: 12px;
+      .top-buttons {
+        top: 12px;
+        right: 12px;
+        gap: 6px;
       }
 
-      .navi-toggle {
-        right: 170px;
-      }
-
-      .roadview-toggle {
-        right: 98px;
-      }
-
-      .roadview-pick-toggle {
-        right: 16px;
+      .top-buttons button {
+        padding: 8px 10px;
+        font-size: 12px;
+        min-width: 70px;
       }
 
       .roadview-wrap {
@@ -454,8 +476,16 @@
         height: calc(100% - 68px);
       }
 
-      .map-legend {
+      .legend-toggle {
         right: 12px;
+        bottom: 12px;
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+      }
+
+      .map-legend {
+        right: 52px;
         bottom: 12px;
         font-size: 12px;
         min-width: 140px;
@@ -537,9 +567,12 @@
 
     <div class="map-wrap">
       <button id="sidebarToggle" class="sidebar-toggle" onclick="toggleSidebar()">필터 닫기</button>
-      <button id="naviToggle" class="navi-toggle" onclick="startNavigationFromRoute()">길찾기</button>
-      <button id="roadviewToggle" class="roadview-toggle" onclick="toggleRoadviewPanel()">로드뷰 열기</button>
-      <button id="roadviewPickToggle" class="roadview-pick-toggle" onclick="toggleRoadviewPickMode()">로드뷰 찍기</button>
+
+      <div class="top-buttons">
+        <button type="button" onclick="startNavigationFromRoute()">길찾기</button>
+        <button type="button" id="roadviewToggle" onclick="toggleRoadviewPanel()">로드뷰</button>
+        <button type="button" id="roadviewPickToggle" class="roadview-pick-btn" onclick="toggleRoadviewPickMode()">찍기</button>
+      </div>
 
       <div id="map"></div>
 
@@ -554,7 +587,8 @@
         <div id="roadview"></div>
       </div>
 
-      <div class="map-legend" id="mapLegend"></div>
+      <button id="legendToggle" class="legend-toggle" onclick="toggleLegend()">▶</button>
+      <div class="map-legend collapsed" id="mapLegend"></div>
     </div>
   </div>
 
@@ -776,6 +810,19 @@
       legend.innerHTML = html;
     }
 
+    function toggleLegend() {
+      const legend = document.getElementById("mapLegend");
+      const toggle = document.getElementById("legendToggle");
+
+      legend.classList.toggle("collapsed");
+
+      if (legend.classList.contains("collapsed")) {
+        toggle.textContent = "▶";
+      } else {
+        toggle.textContent = "◀";
+      }
+    }
+
     function renderRouteInfo() {
       document.getElementById("routeStartText").textContent = routeStartStore ? routeStartStore.name : "선택 안 됨";
       document.getElementById("routeEndText").textContent = routeEndStore ? routeEndStore.name : "선택 안 됨";
@@ -910,11 +957,12 @@
       const wrap = document.getElementById("roadviewWrap");
       const toggleBtn = document.getElementById("roadviewToggle");
       wrap.classList.remove("open");
-      toggleBtn.textContent = "로드뷰 열기";
+      toggleBtn.textContent = "로드뷰";
     }
 
     function toggleRoadviewPanel() {
       const wrap = document.getElementById("roadviewWrap");
+      const toggleBtn = document.getElementById("roadviewToggle");
 
       if (wrap.classList.contains("open")) {
         closeRoadviewPanel();
@@ -928,6 +976,7 @@
         return;
       }
 
+      toggleBtn.textContent = "로드뷰 닫기";
       openRoadviewForStore(selectedStore);
     }
 
@@ -959,8 +1008,9 @@
       isRoadviewPickMode = true;
       isRoadviewPickerVisible = true;
 
-      document.getElementById("roadviewPickToggle").classList.add("active");
-      document.getElementById("roadviewPickToggle").textContent = "찍기 종료";
+      const button = document.getElementById("roadviewPickToggle");
+      button.classList.add("active");
+      button.textContent = "찍기 종료";
 
       map.addOverlayMapTypeId(kakao.maps.MapTypeId.ROADVIEW);
 
@@ -976,8 +1026,9 @@
       isRoadviewPickMode = false;
       isRoadviewPickerVisible = false;
 
-      document.getElementById("roadviewPickToggle").classList.remove("active");
-      document.getElementById("roadviewPickToggle").textContent = "로드뷰 찍기";
+      const button = document.getElementById("roadviewPickToggle");
+      button.classList.remove("active");
+      button.textContent = "찍기";
 
       map.removeOverlayMapTypeId(kakao.maps.MapTypeId.ROADVIEW);
 
@@ -1021,8 +1072,8 @@
     }
 
     function startNavigationFromRoute() {
-      if (!routeStartStore || !routeEndStore) {
-        alert("출발지와 도착지를 모두 지정해 주세요.");
+      if (!routeEndStore) {
+        alert("도착지를 지정해 주세요.");
         return;
       }
 
@@ -1036,17 +1087,28 @@
         return;
       }
 
-      Kakao.Navi.start({
-        name: routeEndStore.name,
-        x: routeEndStore.coords.getLng(),
-        y: routeEndStore.coords.getLat(),
-        coordType: "wgs84",
-        sX: routeStartStore.coords.getLng(),
-        sY: routeStartStore.coords.getLat(),
-        sName: routeStartStore.name,
-        vehicleType: 1,
-        rpOption: 100
-      });
+      if (routeStartStore) {
+        Kakao.Navi.start({
+          name: routeEndStore.name,
+          x: routeEndStore.coords.getLng(),
+          y: routeEndStore.coords.getLat(),
+          coordType: "wgs84",
+          sX: routeStartStore.coords.getLng(),
+          sY: routeStartStore.coords.getLat(),
+          sName: routeStartStore.name,
+          vehicleType: 1,
+          rpOption: 100
+        });
+      } else {
+        Kakao.Navi.start({
+          name: routeEndStore.name,
+          x: routeEndStore.coords.getLng(),
+          y: routeEndStore.coords.getLat(),
+          coordType: "wgs84",
+          vehicleType: 1,
+          rpOption: 100
+        });
+      }
     }
 
     function selectStore(store) {
