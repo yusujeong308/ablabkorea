@@ -875,58 +875,44 @@ function getFilteredStores(filters = {}) {
   return results;
 }
 
-    function applyFilters() {
-      if (storeMarkers.length === 0) {
-        alert("매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
-        return;
-      }
+function applyFilters() {
+  if (storeMarkers.length === 0) {
+    alert("매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
+    return;
+  }
 
-      const keyword = normalizeText(document.getElementById("searchInput").value);
-      const manager = document.getElementById("managerFilter").value;
-      const brand = document.getElementById("brandFilter").value;
-      const region = document.getElementById("regionFilter").value;
+  const current = getCurrentFilterValues();
+  const results = getFilteredStores(current);
 
-      const results = getFilteredStores();
+  closeOpenedInfowindow();
 
-      closeOpenedInfowindow();
+  // 드롭다운 옵션도 현재 선택값 기준으로 다시 계산
+  renderFilterOptions();
 
-      if (!keyword && !manager && !brand && !region) {
-        selectedStoreName = null;
-        updateMarkers(storeMarkers);
-        renderStoreList(storeMarkers);
-        renderDefaultMessage();
-        return;
-      }
+  if (!current.keyword && !current.manager && !current.brand && !current.region) {
+    selectedStoreName = null;
+    updateMarkers(storeMarkers);
+    renderStoreList(storeMarkers);
+    renderDefaultMessage();
+    return;
+  }
 
-      if (results.length === 0) {
-        selectedStoreName = null;
-        updateMarkers([]);
-        document.getElementById("storeList").innerHTML = "";
-        renderNoResultMessage();
-        return;
-      }
+  if (results.length === 0) {
+    selectedStoreName = null;
+    updateMarkers([]);
+    document.getElementById("storeList").innerHTML = "";
+    renderNoResultMessage();
+    return;
+  }
 
-      if (selectedStoreName && !results.some(store => store.name === selectedStoreName)) {
-        selectedStoreName = null;
-      }
+  if (selectedStoreName && !results.some(store => store.name === selectedStoreName)) {
+    selectedStoreName = null;
+  }
 
-      updateMarkers(results);
-      renderStoreList(results);
-      renderResultMessage(results);
-    }
-
-    function resetFilters() {
-      document.getElementById("searchInput").value = "";
-      document.getElementById("managerFilter").value = "";
-      document.getElementById("brandFilter").value = "";
-      document.getElementById("regionFilter").value = "";
-
-      selectedStoreName = null;
-      closeOpenedInfowindow();
-      updateMarkers(storeMarkers);
-      renderStoreList(storeMarkers);
-      renderDefaultMessage();
-    }
+  updateMarkers(results);
+  renderStoreList(results);
+  renderResultMessage(results);
+}
 
     // =========================
     // 12. 매장 초기화
@@ -989,6 +975,7 @@ function getFilteredStores(filters = {}) {
 
           if (loadedCount === stores.length) {
             if (successCount > 0) {
+               renderFilterOptions();
               updateMarkers(storeMarkers);
               renderStoreList(storeMarkers);
             } else {
@@ -1011,7 +998,6 @@ function getFilteredStores(filters = {}) {
     // =========================
     // 14. 실행
     // =========================
-    renderFilterOptions();
     renderLegend();
     renderDefaultMessage();
     initializeStores();
