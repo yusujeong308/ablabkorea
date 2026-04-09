@@ -739,18 +739,23 @@
       toggleBtn.textContent = "로드뷰 열기";
     }
 
-    function toggleRoadviewPanel() {
-      const wrap = document.getElementById("roadviewWrap");
+function toggleRoadviewPanel() {
+  const wrap = document.getElementById("roadviewWrap");
 
-      if (wrap.classList.contains("open")) {
-        closeRoadviewPanel();
-        return;
-      }
+  if (wrap.classList.contains("open")) {
+    closeRoadviewPanel();
+    return;
+  }
 
-      if (currentRoadviewStore) {
-        openRoadviewForStore(currentRoadviewStore);
-        return;
-      }
+  const selectedStore = storeMarkers.find(store => store.name === selectedStoreName);
+
+  if (!selectedStore) {
+    alert("먼저 매장을 선택해 주세요.");
+    return;
+  }
+
+  openRoadviewForStore(selectedStore);
+}
 
       alert("먼저 매장을 선택해 주세요.");
     }
@@ -771,7 +776,6 @@
       const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
       renderStoreList(currentResults);
 
-      openRoadviewForStore(store);
     }
 
     function applyFilters() {
