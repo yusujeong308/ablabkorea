@@ -612,40 +612,83 @@
     // 6. 필터 옵션 렌더링
     // 순서: 담당자 -> 브랜드 -> 지역
     // =========================
-    function renderFilterOptions() {
-      const managerFilter = document.getElementById("managerFilter");
-      const brandFilter = document.getElementById("brandFilter");
-      const regionFilter = document.getElementById("regionFilter");
+function renderFilterOptions() {
+  const managerFilter = document.getElementById("managerFilter");
+  const brandFilter = document.getElementById("brandFilter");
+  const regionFilter = document.getElementById("regionFilter");
 
-      const managers = createUniqueOptions(stores.map(store => store.manager));
-      const brands = createUniqueOptions(stores.map(store => store.brand));
-      const regions = createUniqueOptions(stores.map(store => extractRegion(store.address)));
+  const current = getCurrentFilterValues();
 
-      managerFilter.innerHTML = '<option value="">전체 담당자</option>';
-      brandFilter.innerHTML = '<option value="">전체 브랜드</option>';
-      regionFilter.innerHTML = '<option value="">전체 지역</option>';
+  const selectedManager = current.manager;
+  const selectedBrand = current.brand;
+  const selectedRegion = current.region;
 
-      managers.forEach(manager => {
-        const option = document.createElement("option");
-        option.value = manager;
-        option.textContent = manager;
-        managerFilter.appendChild(option);
-      });
+  // 담당자 옵션:
+  // 브랜드, 지역, 검색어는 반영하되 담당자 자신은 제외
+  const managerCandidates = getFilteredStores({
+    keyword: current.keyword,
+    brand: current.brand,
+    region: current.region
+  });
 
-      brands.forEach(brand => {
-        const option = document.createElement("option");
-        option.value = brand;
-        option.textContent = brand;
-        brandFilter.appendChild(option);
-      });
+  // 브랜드 옵션:
+  // 담당자, 지역, 검색어는 반영하되 브랜드 자신은 제외
+  const brandCandidates = getFilteredStores({
+    keyword: current.keyword,
+    manager: current.manager,
+    region: current.region
+  });
 
-      regions.forEach(region => {
-        const option = document.createElement("option");
-        option.value = region;
-        option.textContent = region;
-        regionFilter.appendChild(option);
-      });
-    }
+  // 지역 옵션:
+  // 담당자, 브랜드, 검색어는 반영하되 지역 자신은 제외
+  const regionCandidates = getFilteredStores({
+    keyword: current.keyword,
+    manager: current.manager,
+    brand: current.brand
+  });
+
+  const managers = createUniqueOptions(managerCandidates.map(store => store.manager));
+  const brands = createUniqueOptions(brandCandidates.map(store => store.brand));
+  const regions = createUniqueOptions(regionCandidates.map(store => store.region));
+
+  managerFilter.innerHTML = '<option value="">전체 담당자</option>';
+  brandFilter.innerHTML = '<option value="">전체 브랜드</option>';
+  regionFilter.innerHTML = '<option value="">전체 지역</option>';
+
+  managers.forEach(manager => {
+    const option = document.createElement("option");
+    option.value = manager;
+    option.textContent = manager;
+    managerFilter.appendChild(option);
+  });
+
+  brands.forEach(brand => {
+    const option = document.createElement("option");
+    option.value = brand;
+    option.textContent = brand;
+    brandFilter.appendChild(option);
+  });
+
+  regions.forEach(region => {
+    const option = document.createElement("option");
+    option.value = region;
+    option.textContent = region;
+    regionFilter.appendChild(option);
+  });
+
+  // 기존 선택값 복원
+  if (managers.includes(selectedManager)) {
+    managerFilter.value = selectedManager;
+  }
+
+  if (brands.includes(selectedBrand)) {
+    brandFilter.value = selectedBrand;
+  }
+
+  if (regions.includes(selectedRegion)) {
+    regionFilter.value = selectedRegion;
+  }
+}
 
     // =========================
     // 7. 범례 렌더링
