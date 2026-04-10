@@ -1134,10 +1134,10 @@
     function moveMapForInfoWindow(store) {
       if (!store || !store.coords) return;
 
-      setTimeout(() => {
-        map.relayout();
+      if (isMobileDevice()) {
+        setTimeout(() => {
+          map.relayout();
 
-        if (isMobileDevice()) {
           const projection = map.getProjection();
 
           if (!projection) {
@@ -1152,11 +1152,13 @@
 
           map.setLevel(4);
           map.setCenter(movedCoords);
-        } else {
+        }, 120);
+      } else {
+        setTimeout(() => {
           map.setLevel(3);
           map.setCenter(store.coords);
-        }
-      }, 120);
+        }, 80);
+      }
     }
 
     function openInfoWindowSafely(store) {
@@ -1164,26 +1166,35 @@
 
       closeOpenedInfowindow();
 
-      setTimeout(() => {
-        map.relayout();
-      }, 80);
-
-      setTimeout(() => {
+      const openWindow = () => {
+        closeOpenedInfowindow();
         store.infowindow.open(map, store.marker);
         openedInfowindow = store.infowindow;
-      }, 260);
+      };
 
-      setTimeout(() => {
-        store.infowindow.open(map, store.marker);
-        openedInfowindow = store.infowindow;
-      }, 520);
+      if (isMobileDevice()) {
+        setTimeout(() => {
+          map.relayout();
+
+          setTimeout(() => {
+            openWindow();
+
+            setTimeout(() => {
+              openWindow();
+            }, 250);
+          }, 180);
+        }, 250);
+      } else {
+        setTimeout(() => {
+          openWindow();
+        }, 120);
+      }
     }
 
     function selectStore(store) {
       if (!store) return;
 
       selectedStoreName = store.name;
-
       renderSelectedStore(store);
 
       if (!routeEndStore) {
@@ -1194,12 +1205,29 @@
       const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
       renderStoreList(currentResults);
 
-      if (isMobileDevice()) {
-        scrollToMapTop();
-      }
+      closeOpenedInfowindow();
 
-      moveMapForInfoWindow(store);
-      openInfoWindowSafely(store);
+      if (isMobileDevice()) {
+        mapWrapEl.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+
+        setTimeout(() => {
+          map.relayout();
+          moveMapForInfoWindow(store);
+
+          setTimeout(() => {
+            openInfoWindowSafely(store);
+          }, 260);
+        }, 220);
+      } else {
+        moveMapForInfoWindow(store);
+
+        setTimeout(() => {
+          openInfoWindowSafely(store);
+        }, 160);
+      }
     }
 
     function applyFilters() {
