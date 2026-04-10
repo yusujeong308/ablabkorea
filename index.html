@@ -450,6 +450,21 @@
     min-height: 0;
     border-bottom: none;
   }
+      .info-box {
+  width: 240px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.info-box h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.info-box strong {
+  width: 54px;
+}
 
       #map {
         height: 100%;
@@ -659,7 +674,7 @@
       "김세연": "red",
       "김광태": "blue",
       "최낙현": "green",
-      "이승우": "purple"
+      "이승우": "yellow"
     };
 
     function normalizeText(text) {
@@ -702,7 +717,7 @@
     }
 
     function getMarkerImageByManager(manager) {
-      const color = managerMarkerColors[manager] || "yellow";
+      const color = managerMarkerColors[manager] || "purple";
       const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
       const imageSize = new kakao.maps.Size(32, 32);
       const imageOption = { offset: new kakao.maps.Point(16, 32) };
@@ -791,7 +806,7 @@
       let html = '<div class="map-legend-title">담당자 핀 색상</div>';
 
       managers.forEach(manager => {
-        const color = managerMarkerColors[manager] || "yellow";
+        const color = managerMarkerColors[manager] || "purple";
         const icon = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
 
         html += `
