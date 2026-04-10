@@ -637,6 +637,29 @@
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
 
   <script>
+    function moveMapForInfoWindow(store) {
+  if (isMobileDevice()) {
+    const projection = map.getProjection();
+
+    if (!projection) {
+      map.setCenter(store.coords);
+      map.setLevel(4);
+      return;
+    }
+
+    const point = projection.pointFromCoords(store.coords);
+
+    // 숫자를 키울수록 핀이 더 아래쪽에 배치됨
+    const movedPoint = new kakao.maps.Point(point.x, point.y - 220);
+    const movedCoords = projection.coordsFromPoint(movedPoint);
+
+    map.setCenter(movedCoords);
+    map.setLevel(4);
+  } else {
+    map.setCenter(store.coords);
+    map.setLevel(3);
+  }
+}
     if (!window.Kakao.isInitialized()) {
       Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
     }
@@ -1145,8 +1168,7 @@
       selectedStoreName = store.name;
 
       closeOpenedInfowindow();
-      map.setCenter(store.coords);
-      map.setLevel(3);
+moveMapForInfoWindow(store);
 
       store.infowindow.open(map, store.marker);
       openedInfowindow = store.infowindow;
