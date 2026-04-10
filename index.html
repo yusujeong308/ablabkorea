@@ -702,7 +702,7 @@
     }
 
     function getMarkerImageByManager(manager) {
-      const color = managerMarkerColors[manager] || "white";
+      const color = managerMarkerColors[manager] || "yellow";
       const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
       const imageSize = new kakao.maps.Size(32, 32);
       const imageOption = { offset: new kakao.maps.Point(16, 32) };
@@ -791,7 +791,7 @@
       let html = '<div class="map-legend-title">담당자 핀 색상</div>';
 
       managers.forEach(manager => {
-        const color = managerMarkerColors[manager] || "white";
+        const color = managerMarkerColors[manager] || "yellow";
         const icon = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
 
         html += `
