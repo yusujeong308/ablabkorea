@@ -9,10 +9,15 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       font-family: Arial, sans-serif;
       background: #f8f9fb;
+    }
+
+    body {
+      min-height: 100vh;
     }
 
     .layout {
@@ -29,7 +34,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      transition: width 0.3s ease, min-width 0.3s ease;
+      transition: width 0.3s ease, min-width 0.3s ease, height 0.3s ease;
     }
 
     .sidebar.collapsed {
@@ -163,7 +168,6 @@
       background: #fafafa;
       min-height: 210px;
       flex-shrink: 0;
-      scroll-margin-top: 12px;
     }
 
     .selected-store h2 {
@@ -424,10 +428,15 @@
     }
 
     @media (max-width: 768px) {
+      html, body {
+        height: auto;
+      }
+
       .layout {
         display: flex;
         flex-direction: column;
         height: auto;
+        min-height: 100vh;
       }
 
       .map-wrap {
@@ -615,7 +624,7 @@
       </div>
     </aside>
 
-    <div class="map-wrap">
+    <div class="map-wrap" id="mapWrap">
       <button id="sidebarToggle" class="sidebar-toggle" onclick="toggleSidebar()">필터 닫기</button>
 
       <div class="top-buttons">
@@ -654,7 +663,10 @@
     let stores = [];
     let storesForFilter = [];
 
-    const map = new kakao.maps.Map(document.getElementById("map"), {
+    const mapContainer = document.getElementById("map");
+    const mapWrapEl = document.getElementById("mapWrap");
+
+    const map = new kakao.maps.Map(mapContainer, {
       center: new kakao.maps.LatLng(36.5, 127.8),
       level: 13
     });
@@ -732,6 +744,24 @@
       const imageSize = new kakao.maps.Size(32, 32);
       const imageOption = { offset: new kakao.maps.Point(16, 32) };
       return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+    }
+
+    function isMobileDevice() {
+      return window.matchMedia("(max-width: 768px)").matches;
+    }
+
+    function relayoutMapSafely() {
+      setTimeout(() => {
+        map.relayout();
+      }, 100);
+
+      setTimeout(() => {
+        map.relayout();
+      }, 300);
+
+      setTimeout(() => {
+        map.relayout();
+      }, 700);
     }
 
     function getCurrentFilterValues() {
@@ -920,7 +950,7 @@
       });
     }
 
-    function updateMarkers(results) {
+    function updateMarkers(results, shouldFitBounds = true) {
       const bounds = new kakao.maps.LatLngBounds();
 
       storeMarkers.forEach(store => {
@@ -929,7 +959,7 @@
         if (visible) bounds.extend(store.coords);
       });
 
-      if (results.length > 0) {
+      if (results.length > 0 && shouldFitBounds) {
         map.setBounds(bounds);
       }
     }
@@ -1086,112 +1116,73 @@
       renderRouteInfo();
     }
 
-    function isMobileDevice() {
-      return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-    }
-
     function getSelectedStoreData() {
       return storeMarkers.find(store => store.name === selectedStoreName) || null;
     }
 
+    function scrollToMapTop() {
+      if (!isMobileDevice()) return;
+
+      setTimeout(() => {
+        mapWrapEl.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 60);
+    }
+
     function moveMapForInfoWindow(store) {
-      if (isMobileDevice()) {
-        setTimeout(() => {
+      if (!store || !store.coords) return;
+
+      setTimeout(() => {
+        map.relayout();
+
+        if (isMobileDevice()) {
           const projection = map.getProjection();
 
           if (!projection) {
-            map.setCenter(store.coords);
             map.setLevel(4);
+            map.setCenter(store.coords);
             return;
           }
 
           const point = projection.pointFromCoords(store.coords);
-          const movedPoint = new kakao.maps.Point(point.x, point.y - 180);
+          const movedPoint = new kakao.maps.Point(point.x, point.y - 140);
           const movedCoords = projection.coordsFromPoint(movedPoint);
 
-          map.setCenter(movedCoords);
           map.setLevel(4);
-        }, 50);
-      } else {
-        map.setCenter(store.coords);
-        map.setLevel(3);
-      }
-    }
-
-    function scrollToSelectedStoreBox() {
-      const box = document.getElementById("selectedStore");
-      if (!box) return;
-
-      if (isMobileDevice()) {
-        setTimeout(() => {
-          box.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-          });
-        }, 250);
-      }
-    }
-
-    function startNavigationFromRoute() {
-      const destinationStore = routeEndStore || getSelectedStoreData();
-
-      if (!destinationStore) {
-        alert("도착지로 사용할 매장을 먼저 선택하거나 설정해 주세요.");
-        return;
-      }
-
-      if (!window.Kakao) {
-        alert("카카오 SDK가 로드되지 않았습니다.");
-        return;
-      }
-
-      if (!Kakao.isInitialized()) {
-        try {
-          Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
-        } catch (error) {
-          console.error(error);
-          alert("카카오 SDK 초기화에 실패했습니다.");
-          return;
+          map.setCenter(movedCoords);
+        } else {
+          map.setLevel(3);
+          map.setCenter(store.coords);
         }
-      }
+      }, 120);
+    }
 
-      if (!Kakao.Navi || typeof Kakao.Navi.start !== "function") {
-        alert("카카오내비 기능을 사용할 수 없습니다. SDK 설정을 확인해 주세요.");
-        return;
-      }
+    function openInfoWindowSafely(store) {
+      if (!store || !store.marker || !store.infowindow) return;
 
-      if (!isMobileDevice()) {
-        alert("카카오내비 길찾기는 모바일에서만 실행됩니다.");
-        return;
-      }
+      closeOpenedInfowindow();
 
-      const naviOptions = {
-        name: destinationStore.name,
-        x: Number(destinationStore.coords.getLng()),
-        y: Number(destinationStore.coords.getLat()),
-        coordType: "wgs84",
-        vehicleType: 1,
-        rpOption: 100
-      };
+      setTimeout(() => {
+        map.relayout();
+      }, 80);
 
-      if (routeStartStore) {
-        naviOptions.sX = Number(routeStartStore.coords.getLng());
-        naviOptions.sY = Number(routeStartStore.coords.getLat());
-      }
+      setTimeout(() => {
+        store.infowindow.open(map, store.marker);
+        openedInfowindow = store.infowindow;
+      }, 260);
 
-      try {
-        Kakao.Navi.start(naviOptions);
-      } catch (error) {
-        console.error("Kakao.Navi.start error:", error);
-        alert("카카오내비 실행에 실패했습니다. 카카오 디벨로퍼스에 현재 접속 도메인이 등록되어 있는지 확인해 주세요.");
-      }
+      setTimeout(() => {
+        store.infowindow.open(map, store.marker);
+        openedInfowindow = store.infowindow;
+      }, 520);
     }
 
     function selectStore(store) {
-      selectedStoreName = store.name;
+      if (!store) return;
 
-      closeOpenedInfowindow();
-      moveMapForInfoWindow(store);
+      selectedStoreName = store.name;
 
       renderSelectedStore(store);
 
@@ -1203,12 +1194,12 @@
       const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
       renderStoreList(currentResults);
 
-      setTimeout(() => {
-        store.infowindow.open(map, store.marker);
-        openedInfowindow = store.infowindow;
-      }, 180);
+      if (isMobileDevice()) {
+        scrollToMapTop();
+      }
 
-      scrollToSelectedStoreBox();
+      moveMapForInfoWindow(store);
+      openInfoWindowSafely(store);
     }
 
     function applyFilters() {
@@ -1225,7 +1216,7 @@
 
       if (!current.keyword && !current.manager && !current.brand && !current.region) {
         selectedStoreName = null;
-        updateMarkers(storeMarkers);
+        updateMarkers(storeMarkers, true);
         renderStoreList(storeMarkers);
         renderDefaultMessage();
         return;
@@ -1233,7 +1224,7 @@
 
       if (results.length === 0) {
         selectedStoreName = null;
-        updateMarkers([]);
+        updateMarkers([], false);
         document.getElementById("storeList").innerHTML = "";
         renderNoResultMessage();
         return;
@@ -1243,7 +1234,7 @@
         selectedStoreName = null;
       }
 
-      updateMarkers(results);
+      updateMarkers(results, true);
       renderStoreList(results);
       renderResultMessage(results);
     }
@@ -1257,7 +1248,7 @@
       selectedStoreName = null;
       closeOpenedInfowindow();
       renderFilterOptions();
-      updateMarkers(storeMarkers);
+      updateMarkers(storeMarkers, true);
       renderStoreList(storeMarkers);
       renderDefaultMessage();
     }
@@ -1269,9 +1260,7 @@
       sidebar.classList.toggle("collapsed");
       toggleButton.textContent = sidebar.classList.contains("collapsed") ? "필터 열기" : "필터 닫기";
 
-      setTimeout(() => {
-        map.relayout();
-      }, 300);
+      relayoutMapSafely();
     }
 
     function resetMapData() {
@@ -1367,9 +1356,10 @@
               renderFilterOptions();
               renderLegend();
               renderRouteInfo();
-              updateMarkers(storeMarkers);
+              updateMarkers(storeMarkers, true);
               renderStoreList(storeMarkers);
               renderDefaultMessage();
+              relayoutMapSafely();
             } else {
               alert("매장 좌표를 불러오지 못했습니다. 주소를 확인해 주세요.");
             }
@@ -1390,17 +1380,64 @@
 
         stores = Array.isArray(data) ? data : [];
         initializeStores();
-
-        setTimeout(() => {
-          map.relayout();
-        }, 300);
-
-        setTimeout(() => {
-          map.relayout();
-        }, 800);
+        relayoutMapSafely();
       } catch (error) {
         console.error("매장 데이터 불러오기 실패:", error);
         alert("구글시트 매장 데이터를 불러오지 못했습니다.");
+      }
+    }
+
+    function startNavigationFromRoute() {
+      const destinationStore = routeEndStore || getSelectedStoreData();
+
+      if (!destinationStore) {
+        alert("도착지로 사용할 매장을 먼저 선택하거나 설정해 주세요.");
+        return;
+      }
+
+      if (!window.Kakao) {
+        alert("카카오 SDK가 로드되지 않았습니다.");
+        return;
+      }
+
+      if (!Kakao.isInitialized()) {
+        try {
+          Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
+        } catch (error) {
+          console.error(error);
+          alert("카카오 SDK 초기화에 실패했습니다.");
+          return;
+        }
+      }
+
+      if (!Kakao.Navi || typeof Kakao.Navi.start !== "function") {
+        alert("카카오내비 기능을 사용할 수 없습니다. SDK 설정을 확인해 주세요.");
+        return;
+      }
+
+      if (isMobileDevice()) {
+        const naviOptions = {
+          name: destinationStore.name,
+          x: Number(destinationStore.coords.getLng()),
+          y: Number(destinationStore.coords.getLat()),
+          coordType: "wgs84",
+          vehicleType: 1,
+          rpOption: 100
+        };
+
+        if (routeStartStore) {
+          naviOptions.sX = Number(routeStartStore.coords.getLng());
+          naviOptions.sY = Number(routeStartStore.coords.getLat());
+        }
+
+        try {
+          Kakao.Navi.start(naviOptions);
+        } catch (error) {
+          console.error("Kakao.Navi.start error:", error);
+          alert("카카오내비 실행에 실패했습니다. 카카오 디벨로퍼스에 현재 접속 도메인이 등록되어 있는지 확인해 주세요.");
+        }
+      } else {
+        alert("카카오내비 길찾기는 모바일에서만 실행됩니다.");
       }
     }
 
@@ -1432,29 +1469,21 @@
     loadStoresFromSheet();
 
     window.addEventListener("load", function() {
-      setTimeout(() => {
-        map.relayout();
-      }, 300);
-
-      setTimeout(() => {
-        map.relayout();
-      }, 800);
+      relayoutMapSafely();
     });
 
     window.addEventListener("resize", function() {
-      setTimeout(() => {
-        map.relayout();
-      }, 200);
+      relayoutMapSafely();
     });
 
     window.addEventListener("orientationchange", function() {
-      setTimeout(() => {
-        map.relayout();
-      }, 300);
+      relayoutMapSafely();
+    });
 
-      setTimeout(() => {
-        map.relayout();
-      }, 800);
+    document.addEventListener("visibilitychange", function() {
+      if (!document.hidden) {
+        relayoutMapSafely();
+      }
     });
   </script>
 </body>
