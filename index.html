@@ -163,6 +163,7 @@
       background: #fafafa;
       min-height: 210px;
       flex-shrink: 0;
+      scroll-margin-top: 12px;
     }
 
     .selected-store h2 {
@@ -236,6 +237,7 @@
     #map {
       width: 100%;
       height: 100%;
+      background: #f1f3f5;
     }
 
     .sidebar-toggle {
@@ -422,53 +424,59 @@
     }
 
     @media (max-width: 768px) {
-  .layout {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-  }
+      .layout {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+      }
 
-.map-wrap {
-  order: 1;
-  height: 55vh;
-  height: 55dvh;
-  min-height: 420px;
-}
+      .map-wrap {
+        order: 1;
+        width: 100%;
+        height: 56svh;
+        height: 56dvh;
+        min-height: 380px;
+        position: relative;
+        overflow: hidden;
+      }
 
-  .sidebar {
-    order: 2;
-    width: 100%;
-    min-width: 100%;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid #e5e5e5;
-  }
+      .sidebar {
+        order: 2;
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e5e5e5;
+      }
 
-  .sidebar.collapsed {
-    width: 100%;
-    min-width: 100%;
-    height: 0;
-    min-height: 0;
-    border-bottom: none;
-  }
+      .sidebar.collapsed {
+        width: 100%;
+        min-width: 100%;
+        height: 0;
+        min-height: 0;
+        border-bottom: none;
+      }
+
       .info-box {
-  width: 240px;
-  padding: 10px;
-  font-size: 12px;
-  line-height: 1.6;
-}
+        width: 240px;
+        padding: 10px;
+        font-size: 12px;
+        line-height: 1.6;
+      }
 
-.info-box h3 {
-  margin: 0 0 6px;
-  font-size: 16px;
-}
+      .info-box h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
 
-.info-box strong {
-  width: 54px;
-}
+      .info-box strong {
+        width: 54px;
+      }
 
       #map {
+        width: 100%;
         height: 100%;
+        min-height: 380px;
       }
 
       .search-box {
@@ -597,7 +605,7 @@
         </div>
       </div>
 
-      <div class="sidebar-scroll">
+      <div class="sidebar-scroll" id="sidebarScroll">
         <div class="selected-store" id="selectedStore">
           <h2>매장을 선택하세요</h2>
           <div class="row">왼쪽 목록이나 지도 핀을 누르면 상세 정보가 표시됩니다.</div>
@@ -637,29 +645,6 @@
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
 
   <script>
-    function moveMapForInfoWindow(store) {
-  if (isMobileDevice()) {
-    const projection = map.getProjection();
-
-    if (!projection) {
-      map.setCenter(store.coords);
-      map.setLevel(4);
-      return;
-    }
-
-    const point = projection.pointFromCoords(store.coords);
-
-    // 숫자를 키울수록 핀이 더 아래쪽에 배치됨
-    const movedPoint = new kakao.maps.Point(point.x, point.y - 180);
-    const movedCoords = projection.coordsFromPoint(movedPoint);
-
-    map.setCenter(movedCoords);
-    map.setLevel(4);
-  } else {
-    map.setCenter(store.coords);
-    map.setLevel(3);
-  }
-}
     if (!window.Kakao.isInitialized()) {
       Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
     }
@@ -1109,6 +1094,44 @@
       return storeMarkers.find(store => store.name === selectedStoreName) || null;
     }
 
+    function moveMapForInfoWindow(store) {
+      if (isMobileDevice()) {
+        setTimeout(() => {
+          const projection = map.getProjection();
+
+          if (!projection) {
+            map.setCenter(store.coords);
+            map.setLevel(4);
+            return;
+          }
+
+          const point = projection.pointFromCoords(store.coords);
+          const movedPoint = new kakao.maps.Point(point.x, point.y - 180);
+          const movedCoords = projection.coordsFromPoint(movedPoint);
+
+          map.setCenter(movedCoords);
+          map.setLevel(4);
+        }, 50);
+      } else {
+        map.setCenter(store.coords);
+        map.setLevel(3);
+      }
+    }
+
+    function scrollToSelectedStoreBox() {
+      const box = document.getElementById("selectedStore");
+      if (!box) return;
+
+      if (isMobileDevice()) {
+        setTimeout(() => {
+          box.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        }, 250);
+      }
+    }
+
     function startNavigationFromRoute() {
       const destinationStore = routeEndStore || getSelectedStoreData();
 
@@ -1168,10 +1191,7 @@
       selectedStoreName = store.name;
 
       closeOpenedInfowindow();
-moveMapForInfoWindow(store);
-
-      store.infowindow.open(map, store.marker);
-      openedInfowindow = store.infowindow;
+      moveMapForInfoWindow(store);
 
       renderSelectedStore(store);
 
@@ -1182,6 +1202,13 @@ moveMapForInfoWindow(store);
 
       const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
       renderStoreList(currentResults);
+
+      setTimeout(() => {
+        store.infowindow.open(map, store.marker);
+        openedInfowindow = store.infowindow;
+      }, 180);
+
+      scrollToSelectedStoreBox();
     }
 
     function applyFilters() {
@@ -1363,6 +1390,14 @@ moveMapForInfoWindow(store);
 
         stores = Array.isArray(data) ? data : [];
         initializeStores();
+
+        setTimeout(() => {
+          map.relayout();
+        }, 300);
+
+        setTimeout(() => {
+          map.relayout();
+        }, 800);
       } catch (error) {
         console.error("매장 데이터 불러오기 실패:", error);
         alert("구글시트 매장 데이터를 불러오지 못했습니다.");
@@ -1395,24 +1430,32 @@ moveMapForInfoWindow(store);
     });
 
     loadStoresFromSheet();
-    
+
     window.addEventListener("load", function() {
-  setTimeout(() => {
-    map.relayout();
-  }, 300);
-});
+      setTimeout(() => {
+        map.relayout();
+      }, 300);
 
-window.addEventListener("resize", function() {
-  setTimeout(() => {
-    map.relayout();
-  }, 200);
-});
+      setTimeout(() => {
+        map.relayout();
+      }, 800);
+    });
 
-window.addEventListener("orientationchange", function() {
-  setTimeout(() => {
-    map.relayout();
-  }, 300);
-});
+    window.addEventListener("resize", function() {
+      setTimeout(() => {
+        map.relayout();
+      }, 200);
+    });
+
+    window.addEventListener("orientationchange", function() {
+      setTimeout(() => {
+        map.relayout();
+      }, 300);
+
+      setTimeout(() => {
+        map.relayout();
+      }, 800);
+    });
   </script>
 </body>
 </html>
