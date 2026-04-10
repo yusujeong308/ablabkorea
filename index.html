@@ -428,11 +428,12 @@
     height: auto;
   }
 
-  .map-wrap {
-    order: 1;
-    height: 55vh;
-    min-height: 420px;
-  }
+.map-wrap {
+  order: 1;
+  height: 55vh;
+  height: 55dvh;
+  min-height: 420px;
+}
 
   .sidebar {
     order: 2;
@@ -1372,6 +1373,24 @@
     });
 
     loadStoresFromSheet();
+    
+    window.addEventListener("load", function() {
+  setTimeout(() => {
+    map.relayout();
+  }, 300);
+});
+
+window.addEventListener("resize", function() {
+  setTimeout(() => {
+    map.relayout();
+  }, 200);
+});
+
+window.addEventListener("orientationchange", function() {
+  setTimeout(() => {
+    map.relayout();
+  }, 300);
+});
   </script>
 </body>
 </html>
