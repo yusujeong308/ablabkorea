@@ -373,18 +373,6 @@
       transform: translate(-13px, -36px);
       pointer-events: none;
     }
-    .loading-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      background: #fff7e6;
-      color: #8a5700;
-      border: 1px solid #ffd591;
-      margin-top: 8px;
-    }
 
     @media (max-width: 768px) {
       html, body { height: auto; }
@@ -529,10 +517,6 @@
         <div class="filter-actions">
           <button type="button" class="secondary" onclick="resetFilters()">필터 초기화</button>
         </div>
-
-        <div class="loading-chip" id="loadingChip" style="display:none;">
-          <span>좌표 불러오는 중...</span>
-        </div>
       </div>
 
       <div class="route-box">
@@ -608,14 +592,12 @@
     const mapContainer = document.getElementById("map");
     const mapWrapEl = document.getElementById("mapWrap");
     const sidebarEl = document.getElementById("sidebar");
-    const loadingChipEl = document.getElementById("loadingChip");
 
     const map = new kakao.maps.Map(mapContainer, {
       center: new kakao.maps.LatLng(36.5, 127.8),
       level: 13
     });
 
-    const geocoder = new kakao.maps.services.Geocoder();
     const zoomControl = new kakao.maps.ZoomControl();
     map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
@@ -678,10 +660,6 @@
 
     function isMobileDevice() {
       return window.matchMedia("(max-width: 768px)").matches;
-    }
-
-    function showLoadingChip(show) {
-      loadingChipEl.style.display = show ? "inline-flex" : "none";
     }
 
     function relayoutMapSafely() {
@@ -747,10 +725,6 @@
         }).map(store => store.region)
       );
 
-      const selectedManager = current.manager;
-      const selectedBrand = current.brand;
-      const selectedRegion = current.region;
-
       managerFilter.innerHTML = '<option value="">전체 담당자</option>';
       brandFilter.innerHTML = '<option value="">전체 브랜드</option>';
       regionFilter.innerHTML = '<option value="">전체 지역</option>';
@@ -759,9 +733,9 @@
       brands.forEach(value => brandFilter.appendChild(new Option(value, value)));
       regions.forEach(value => regionFilter.appendChild(new Option(value, value)));
 
-      if (managers.includes(selectedManager)) managerFilter.value = selectedManager;
-      if (brands.includes(selectedBrand)) brandFilter.value = selectedBrand;
-      if (regions.includes(selectedRegion)) regionFilter.value = selectedRegion;
+      if (managers.includes(current.manager)) managerFilter.value = current.manager;
+      if (brands.includes(current.brand)) brandFilter.value = current.brand;
+      if (regions.includes(current.region)) regionFilter.value = current.region;
     }
 
     function renderLegend() {
@@ -862,17 +836,14 @@
         `;
 
         div.addEventListener("click", function() {
-          const markerStore = storeMarkers.find(item => item.name === store.name);
-          if (markerStore) {
-            selectStore(markerStore);
-          }
+          selectStore(store);
         });
 
         list.appendChild(div);
       });
     }
 
-    function updateMarkers(results, shouldFitBounds = true) {
+    function updateMarkers(results, shouldFitBounds = false) {
       const bounds = new kakao.maps.LatLngBounds();
 
       storeMarkers.forEach(store => {
@@ -1006,7 +977,6 @@
       }
 
       renderFilterOptions();
-
       const current = getCurrentFilterValues();
       const results = getFilteredMarkerStores(current);
 
@@ -1014,7 +984,7 @@
 
       if (!current.keyword && !current.manager && !current.brand && !current.region) {
         selectedStoreName = null;
-        updateMarkers(storeMarkers, true);
+        updateMarkers(storeMarkers, false);
         renderStoreList(storeMarkers);
         renderDefaultMessage();
         return;
@@ -1046,7 +1016,7 @@
       selectedStoreName = null;
       closeAllInfoWindows();
       renderFilterOptions();
-      updateMarkers(storeMarkers, true);
+      updateMarkers(storeMarkers, false);
       renderStoreList(storeMarkers);
       renderDefaultMessage();
     }
@@ -1209,6 +1179,17 @@
       `;
     }
 
+    function hasValidCoords(store) {
+      return (
+        store.lat !== undefined &&
+        store.lng !== undefined &&
+        store.lat !== null &&
+        store.lng !== null &&
+        String(store.lat).trim() !== "" &&
+        String(store.lng).trim() !== ""
+      );
+    }
+
     function buildStoreMarker(store, coords) {
       const region = extractRegion(store.address);
 
@@ -1236,81 +1217,6 @@
       });
 
       storeMarkers.push(storeData);
-      return storeData;
-    }
-
-    function hasValidCoords(store) {
-      return (
-        store.lat !== undefined &&
-        store.lng !== undefined &&
-        store.lat !== null &&
-        store.lng !== null &&
-        String(store.lat).trim() !== "" &&
-        String(store.lng).trim() !== ""
-      );
-    }
-
-    function initializeFastStores() {
-      stores.forEach(store => {
-        if (hasValidCoords(store)) {
-          const coords = new kakao.maps.LatLng(Number(store.lat), Number(store.lng));
-          buildStoreMarker(store, coords);
-        }
-      });
-    }
-
-    function geocodeMissingStores() {
-      const missingStores = stores.filter(store => !hasValidCoords(store) && store.address);
-
-      if (missingStores.length === 0) {
-        showLoadingChip(false);
-        return;
-      }
-
-      showLoadingChip(true);
-
-      let doneCount = 0;
-
-      missingStores.forEach(store => {
-        geocoder.addressSearch(store.address, function(result, status) {
-          doneCount++;
-
-          if (status === kakao.maps.services.Status.OK) {
-            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-            buildStoreMarker(store, coords);
-          } else {
-            console.warn("주소 변환 실패:", store.name, store.address);
-          }
-
-          if (doneCount === missingStores.length) {
-            showLoadingChip(false);
-            renderAfterMarkerBuild();
-          }
-        });
-      });
-    }
-
-    function renderAfterMarkerBuild() {
-      const current = getCurrentFilterValues();
-      const results = (!current.keyword && !current.manager && !current.brand && !current.region)
-        ? storeMarkers
-        : getFilteredMarkerStores(current);
-
-      renderFilterOptions();
-      renderLegend();
-      renderRouteInfo();
-
-      if (results.length > 0) {
-        updateMarkers(results, true);
-        renderStoreList(results);
-        if (!selectedStoreName) renderDefaultMessage();
-      } else {
-        updateMarkers([], false);
-        renderStoreList([]);
-        renderNoResultMessage();
-      }
-
-      relayoutMapSafely();
     }
 
     function initializeStores() {
@@ -1332,9 +1238,14 @@
       renderStoreList(storesForFilter);
       renderDefaultMessage();
 
-      initializeFastStores();
-      renderAfterMarkerBuild();
-      geocodeMissingStores();
+      const validStores = stores.filter(hasValidCoords);
+      validStores.forEach(store => {
+        const coords = new kakao.maps.LatLng(Number(store.lat), Number(store.lng));
+        buildStoreMarker(store, coords);
+      });
+
+      updateMarkers(storeMarkers, false);
+      relayoutMapSafely();
     }
 
     async function loadStoresFromSheet() {
@@ -1344,7 +1255,7 @@
       }
 
       try {
-        const response = await fetch(SHEET_API_URL, { cache: "no-store" });
+        const response = await fetch(SHEET_API_URL);
         const data = await response.json();
 
         stores = Array.isArray(data) ? data.map(store => ({
@@ -1355,7 +1266,6 @@
         })) : [];
 
         initializeStores();
-        relayoutMapSafely();
       } catch (error) {
         console.error("매장 데이터 불러오기 실패:", error);
         alert("구글시트 매장 데이터를 불러오지 못했습니다.");
