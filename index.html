@@ -427,6 +427,19 @@
       pointer-events: none;
     }
 
+    .loading-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #fff7e6;
+      color: #8a5700;
+      border: 1px solid #ffd591;
+      margin-top: 8px;
+    }
+
     @media (max-width: 768px) {
       html, body {
         height: auto;
@@ -601,6 +614,10 @@
         <div class="filter-actions">
           <button type="button" class="secondary" onclick="resetFilters()">필터 초기화</button>
         </div>
+
+        <div class="loading-chip" id="loadingChip" style="display:none;">
+          <span>좌표 불러오는 중...</span>
+        </div>
       </div>
 
       <div class="route-box">
@@ -657,7 +674,7 @@
       Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
     }
 
-    const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzFmqPMmdvsoaEr7DnuP-uC8y1fq6xDDzLah7poMc-RgQ9nCAnA-mVveEZrXbBKupMm/exec";
+    const SHEET_API_URL = "e121b5704912be9d751a0ceb87a47566";
 
     let stores = [];
     let storesForFilter = [];
@@ -677,6 +694,7 @@
     const mapContainer = document.getElementById("map");
     const mapWrapEl = document.getElementById("mapWrap");
     const sidebarEl = document.getElementById("sidebar");
+    const loadingChipEl = document.getElementById("loadingChip");
 
     const map = new kakao.maps.Map(mapContainer, {
       center: new kakao.maps.LatLng(36.5, 127.8),
@@ -751,10 +769,13 @@
       return window.matchMedia("(max-width: 768px)").matches;
     }
 
+    function showLoadingChip(show) {
+      loadingChipEl.style.display = show ? "inline-flex" : "none";
+    }
+
     function relayoutMapSafely() {
       setTimeout(() => map.relayout(), 80);
-      setTimeout(() => map.relayout(), 240);
-      setTimeout(() => map.relayout(), 500);
+      setTimeout(() => map.relayout(), 220);
     }
 
     function getCurrentFilterValues() {
@@ -783,7 +804,7 @@
       if (keyword) {
         results = results.filter(store => {
           const text = normalizeText(
-            `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.region} ${store.items} ${store.note}`
+            `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.region} ${store.note}`
           );
           return text.includes(keyword);
         });
@@ -892,7 +913,6 @@
         <div class="row"><span class="label">지역</span>${store.region || "-"}</div>
         <div class="row"><span class="label">주소</span>${store.address || "-"}</div>
         <div class="row"><span class="label">전화</span>${store.phone || "-"}</div>
-        <div class="row"><span class="label">품목</span>${store.items || "-"}</div>
         <div class="row"><span class="label">비고</span>${store.note || "-"}</div>
         <div class="selected-actions">
           <button type="button" onclick="setSelectedAsStart()">출발지로 설정</button>
@@ -935,13 +955,15 @@
           <div class="store-item-title">${store.name}</div>
           <div class="store-item-address">${store.address || "-"}</div>
           <div class="store-item-meta">
-            담당자: ${store.manager || "-"} / 브랜드: ${store.brand || "-"} / 지역: ${store.region || "-"}<br />
-            품목: ${store.items || "-"}
+            담당자: ${store.manager || "-"} / 브랜드: ${store.brand || "-"} / 지역: ${store.region || "-"}
           </div>
         `;
 
         div.addEventListener("click", function() {
-          selectStore(store);
+          const markerStore = storeMarkers.find(item => item.name === store.name);
+          if (markerStore) {
+            selectStore(markerStore);
+          }
         });
 
         list.appendChild(div);
@@ -990,7 +1012,6 @@
           behavior: "smooth",
           block: "start"
         });
-
         setTimeout(resolve, 320);
       });
     }
@@ -1278,12 +1299,129 @@
       renderRouteInfo();
     }
 
+    function createInfoWindowContent(store, region) {
+      return `
+        <div class="info-box">
+          <h3>${store.name}</h3>
+          <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
+          <div><strong>브랜드</strong> <span>${store.brand || "-"}</span></div>
+          <div><strong>지역</strong> <span>${region || "-"}</span></div>
+          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
+          <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
+          <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
+        </div>
+      `;
+    }
+
+    function buildStoreMarker(store, coords) {
+      const region = extractRegion(store.address);
+
+      const marker = new kakao.maps.Marker({
+        map: map,
+        position: coords,
+        image: getMarkerImageByManager(store.manager)
+      });
+
+      const infowindow = new kakao.maps.InfoWindow({
+        content: createInfoWindowContent(store, region),
+        removable: true
+      });
+
+      const storeData = {
+        ...store,
+        region,
+        coords,
+        marker,
+        infowindow
+      };
+
+      kakao.maps.event.addListener(marker, "click", function() {
+        selectStore(storeData);
+      });
+
+      storeMarkers.push(storeData);
+      return storeData;
+    }
+
+    function hasValidCoords(store) {
+      return (
+        store.lat !== undefined &&
+        store.lng !== undefined &&
+        store.lat !== null &&
+        store.lng !== null &&
+        String(store.lat).trim() !== "" &&
+        String(store.lng).trim() !== ""
+      );
+    }
+
+    function initializeFastStores() {
+      stores.forEach(store => {
+        if (hasValidCoords(store)) {
+          const coords = new kakao.maps.LatLng(Number(store.lat), Number(store.lng));
+          buildStoreMarker(store, coords);
+        }
+      });
+    }
+
+    function geocodeMissingStores() {
+      const missingStores = stores.filter(store => !hasValidCoords(store) && store.address);
+
+      if (missingStores.length === 0) {
+        showLoadingChip(false);
+        return;
+      }
+
+      showLoadingChip(true);
+
+      let doneCount = 0;
+
+      missingStores.forEach(store => {
+        geocoder.addressSearch(store.address, function(result, status) {
+          doneCount++;
+
+          if (status === kakao.maps.services.Status.OK) {
+            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+            buildStoreMarker(store, coords);
+          } else {
+            console.warn("주소 변환 실패:", store.name, store.address);
+          }
+
+          if (doneCount === missingStores.length) {
+            showLoadingChip(false);
+            renderAfterMarkerBuild();
+          }
+        });
+      });
+    }
+
+    function renderAfterMarkerBuild() {
+      const current = getCurrentFilterValues();
+      const results = (!current.keyword && !current.manager && !current.brand && !current.region)
+        ? storeMarkers
+        : getFilteredMarkerStores(current);
+
+      renderFilterOptions();
+      renderLegend();
+      renderRouteInfo();
+
+      if (results.length > 0) {
+        updateMarkers(results, true);
+        renderStoreList(results);
+        if (!selectedStoreName) {
+          renderDefaultMessage();
+        }
+      } else {
+        updateMarkers([], false);
+        renderStoreList([]);
+        renderNoResultMessage();
+      }
+
+      relayoutMapSafely();
+    }
+
     function initializeStores() {
       resetMapData();
       rebuildStoresForFilter();
-
-      let loadedCount = 0;
-      let successCount = 0;
 
       if (!stores.length) {
         renderFilterOptions();
@@ -1294,85 +1432,33 @@
         return;
       }
 
-      stores.forEach(store => {
-        geocoder.addressSearch(store.address, function(result, status) {
-          loadedCount++;
+      renderFilterOptions();
+      renderLegend();
+      renderRouteInfo();
+      renderStoreList(storesForFilter);
+      renderDefaultMessage();
 
-          if (status === kakao.maps.services.Status.OK) {
-            successCount++;
-
-            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-            const region = extractRegion(store.address);
-
-            const marker = new kakao.maps.Marker({
-              map: map,
-              position: coords,
-              image: getMarkerImageByManager(store.manager)
-            });
-
-            const content = `
-              <div class="info-box">
-                <h3>${store.name}</h3>
-                <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
-                <div><strong>브랜드</strong> <span>${store.brand || "-"}</span></div>
-                <div><strong>지역</strong> <span>${region || "-"}</span></div>
-                <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
-                <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
-                <div><strong>품목</strong> <span>${store.items || "-"}</span></div>
-                <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
-              </div>
-            `;
-
-            const infowindow = new kakao.maps.InfoWindow({
-              content,
-              removable: true
-            });
-
-            const storeData = {
-              ...store,
-              region,
-              coords,
-              marker,
-              infowindow
-            };
-
-            kakao.maps.event.addListener(marker, "click", function() {
-              selectStore(storeData);
-            });
-
-            storeMarkers.push(storeData);
-          } else {
-            console.warn("주소 변환 실패:", store.name, store.address);
-          }
-
-          if (loadedCount === stores.length) {
-            if (successCount > 0) {
-              renderFilterOptions();
-              renderLegend();
-              renderRouteInfo();
-              updateMarkers(storeMarkers, true);
-              renderStoreList(storeMarkers);
-              renderDefaultMessage();
-              relayoutMapSafely();
-            } else {
-              alert("매장 좌표를 불러오지 못했습니다. 주소를 확인해 주세요.");
-            }
-          }
-        });
-      });
+      initializeFastStores();
+      renderAfterMarkerBuild();
+      geocodeMissingStores();
     }
 
     async function loadStoresFromSheet() {
-      if (!SHEET_API_URL || SHEET_API_URL.includes("여기에_앱스스크립트_URL_붙여넣기")) {
-        alert("SHEET_API_URL에 Apps Script 배포 URL을 먼저 넣어 주세요.");
+      if (!SHEET_API_URL) {
+        alert("SHEET_API_URL을 먼저 입력해 주세요.");
         return;
       }
 
       try {
-        const response = await fetch(SHEET_API_URL);
+        const response = await fetch(SHEET_API_URL, { cache: "no-store" });
         const data = await response.json();
 
-        stores = Array.isArray(data) ? data : [];
+        stores = Array.isArray(data) ? data.map(store => ({
+          ...store,
+          lat: store.lat ?? store.latitude ?? "",
+          lng: store.lng ?? store.longitude ?? ""
+        })) : [];
+
         initializeStores();
         relayoutMapSafely();
       } catch (error) {
@@ -1396,7 +1482,7 @@
 
       if (!Kakao.isInitialized()) {
         try {
-          Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
+          Kakao.init("여기에_카카오_JS_KEY");
         } catch (error) {
           console.error(error);
           alert("카카오 SDK 초기화에 실패했습니다.");
