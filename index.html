@@ -589,6 +589,9 @@
     let roadviewPickerOverlay = null;
     let isRoadviewPickerVisible = false;
 
+    let relayoutTimer = null;
+    let markersBuildTaskId = 0;
+
     const mapContainer = document.getElementById("map");
     const mapWrapEl = document.getElementById("mapWrap");
     const sidebarEl = document.getElementById("sidebar");
@@ -663,8 +666,10 @@
     }
 
     function relayoutMapSafely() {
-      setTimeout(() => map.relayout(), 80);
-      setTimeout(() => map.relayout(), 220);
+      clearTimeout(relayoutTimer);
+      relayoutTimer = setTimeout(() => {
+        map.relayout();
+      }, 120);
     }
 
     function getCurrentFilterValues() {
@@ -822,6 +827,8 @@
         String(a.name || "").localeCompare(String(b.name || ""), "ko")
       );
 
+      const fragment = document.createDocumentFragment();
+
       sortedItems.forEach(store => {
         const div = document.createElement("div");
         div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
@@ -839,8 +846,10 @@
           selectStore(store);
         });
 
-        list.appendChild(div);
+        fragment.appendChild(div);
       });
+
+      list.appendChild(fragment);
     }
 
     function updateMarkers(results, shouldFitBounds = false) {
@@ -911,8 +920,31 @@
       }
     }
 
+    function createInfoWindowContent(store, region) {
+      return `
+        <div class="info-box">
+          <h3>${store.name}</h3>
+          <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
+          <div><strong>브랜드</strong> <span>${store.brand || "-"}</span></div>
+          <div><strong>지역</strong> <span>${region || "-"}</span></div>
+          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
+          <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
+          <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
+          <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
+        </div>
+      `;
+    }
+
     function openStoreInfo(store) {
-      if (!store || !store.marker || !store.infowindow) return;
+      if (!store || !store.marker) return;
+
+      if (!store.infowindow) {
+        store.infowindow = new kakao.maps.InfoWindow({
+          content: createInfoWindowContent(store, store.region),
+          removable: true
+        });
+      }
+
       closeAllInfoWindows();
       store.infowindow.open(map, store.marker);
       openedInfowindow = store.infowindow;
@@ -940,8 +972,8 @@
         moveMapToStore(store);
         setTimeout(() => {
           openStoreInfo(store);
-        }, 180);
-      }, 50);
+        }, 120);
+      }, 40);
     }
 
     function setSelectedAsStart() {
@@ -1146,6 +1178,7 @@
     }
 
     function resetMapData() {
+      markersBuildTaskId += 1;
       closeAllInfoWindows();
 
       storeMarkers.forEach(store => {
@@ -1164,21 +1197,6 @@
       renderRouteInfo();
     }
 
-    function createInfoWindowContent(store, region) {
-      return `
-        <div class="info-box">
-          <h3>${store.name}</h3>
-          <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
-          <div><strong>브랜드</strong> <span>${store.brand || "-"}</span></div>
-          <div><strong>지역</strong> <span>${region || "-"}</span></div>
-          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
-          <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
-          <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
-          <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
-        </div>
-      `;
-    }
-
     function hasValidCoords(store) {
       return (
         store.lat !== undefined &&
@@ -1194,22 +1212,18 @@
       const region = extractRegion(store.address);
 
       const marker = new kakao.maps.Marker({
-        map: map,
         position: coords,
         image: getMarkerImageByManager(store.manager)
       });
 
-      const infowindow = new kakao.maps.InfoWindow({
-        content: createInfoWindowContent(store, region),
-        removable: true
-      });
+      marker.setMap(map);
 
       const storeData = {
         ...store,
         region,
         coords,
         marker,
-        infowindow
+        infowindow: null
       };
 
       kakao.maps.event.addListener(marker, "click", function() {
@@ -1217,6 +1231,34 @@
       });
 
       storeMarkers.push(storeData);
+    }
+
+    function buildMarkersInChunks(validStores, chunkSize = 40) {
+      const taskId = markersBuildTaskId;
+      let index = 0;
+
+      function processChunk() {
+        if (taskId !== markersBuildTaskId) return;
+
+        const end = Math.min(index + chunkSize, validStores.length);
+
+        for (let i = index; i < end; i++) {
+          const store = validStores[i];
+          const coords = new kakao.maps.LatLng(Number(store.lat), Number(store.lng));
+          buildStoreMarker(store, coords);
+        }
+
+        index = end;
+
+        if (index < validStores.length) {
+          requestAnimationFrame(processChunk);
+        } else {
+          updateMarkers(storeMarkers, false);
+          relayoutMapSafely();
+        }
+      }
+
+      requestAnimationFrame(processChunk);
     }
 
     function initializeStores() {
@@ -1239,13 +1281,7 @@
       renderDefaultMessage();
 
       const validStores = stores.filter(hasValidCoords);
-      validStores.forEach(store => {
-        const coords = new kakao.maps.LatLng(Number(store.lat), Number(store.lng));
-        buildStoreMarker(store, coords);
-      });
-
-      updateMarkers(storeMarkers, false);
-      relayoutMapSafely();
+      buildMarkersInChunks(validStores, 40);
     }
 
     async function loadStoresFromSheet() {
@@ -1255,7 +1291,7 @@
       }
 
       try {
-        const response = await fetch(SHEET_API_URL);
+        const response = await fetch(SHEET_API_URL, { cache: "no-store" });
         const data = await response.json();
 
         stores = Array.isArray(data) ? data.map(store => ({
@@ -1287,7 +1323,7 @@
 
       if (!Kakao.isInitialized()) {
         try {
-          Kakao.init("여기에_카카오_JS_KEY");
+          Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
         } catch (error) {
           console.error(error);
           alert("카카오 SDK 초기화에 실패했습니다.");
