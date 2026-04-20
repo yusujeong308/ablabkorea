@@ -6,18 +6,22 @@
   <title>ABLAB 매장 거래처 지도</title>
   <style>
     * { box-sizing: border-box; }
+
     html, body {
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
       background: #f8f9fb;
     }
+
     body { min-height: 100vh; }
+
     .layout {
       display: flex;
       width: 100%;
       height: 100vh;
     }
+
     .sidebar {
       width: 390px;
       min-width: 390px;
@@ -28,28 +32,33 @@
       overflow: hidden;
       transition: width 0.3s ease, min-width 0.3s ease, height 0.3s ease;
     }
+
     .sidebar.collapsed {
       width: 0;
       min-width: 0;
       border-right: none;
       overflow: hidden;
     }
+
     .sidebar-header {
       padding: 20px 16px 12px;
       border-bottom: 1px solid #f0f0f0;
       background: #fff;
       flex-shrink: 0;
     }
+
     .sidebar-title {
       margin: 0 0 14px;
       font-size: 20px;
       font-weight: 700;
     }
+
     .search-box {
       display: flex;
       gap: 8px;
       margin-bottom: 10px;
     }
+
     .search-box input {
       flex: 1;
       padding: 10px;
@@ -57,6 +66,7 @@
       border: 1px solid #d9d9d9;
       border-radius: 8px;
     }
+
     .search-box button,
     .filter-actions button,
     .route-actions button,
@@ -71,11 +81,17 @@
       border-radius: 8px;
       cursor: pointer;
     }
+
     .filter-grid {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
+
+    .filter-full {
+      grid-column: 1 / -1;
+    }
+
     .filter-box select {
       width: 100%;
       padding: 10px;
@@ -84,6 +100,7 @@
       font-size: 14px;
       background: #fff;
     }
+
     .filter-actions,
     .selected-actions {
       display: flex;
@@ -91,34 +108,40 @@
       margin-top: 10px;
       flex-wrap: wrap;
     }
+
     .filter-actions button.secondary,
     .route-actions button.secondary,
     .selected-actions button.secondary {
       background: #e9ecef;
       color: #222;
     }
+
     .route-box {
       padding: 14px 16px;
       border-bottom: 1px solid #f0f0f0;
       background: #fffdf7;
       flex-shrink: 0;
     }
+
     .route-box h3 {
       margin: 0 0 10px;
       font-size: 16px;
     }
+
     .route-row {
       font-size: 13px;
       line-height: 1.6;
       margin-bottom: 4px;
       color: #444;
     }
+
     .route-label {
       display: inline-block;
       width: 52px;
       font-weight: 700;
       color: #222;
     }
+
     .route-actions {
       display: flex;
       justify-content: space-between;
@@ -126,9 +149,11 @@
       margin-top: 10px;
       flex-wrap: nowrap;
     }
+
     .route-actions button {
       width: calc(50% - 4px);
     }
+
     .sidebar-scroll {
       flex: 1;
       overflow-y: auto;
@@ -136,6 +161,7 @@
       flex-direction: column;
       min-height: 0;
     }
+
     .selected-store {
       padding: 16px;
       border-bottom: 1px solid #f0f0f0;
@@ -143,15 +169,18 @@
       min-height: 210px;
       flex-shrink: 0;
     }
+
     .selected-store h2 {
       margin: 0 0 12px;
       font-size: 18px;
     }
+
     .selected-store .row {
       margin-bottom: 8px;
       font-size: 14px;
       line-height: 1.5;
     }
+
     .selected-store .label {
       display: inline-block;
       width: 72px;
@@ -159,11 +188,13 @@
       color: #333;
       vertical-align: top;
     }
+
     .store-list {
       flex: none;
       overflow: visible;
       padding: 8px;
     }
+
     .store-item {
       padding: 12px;
       border: 1px solid #ececec;
@@ -173,44 +204,53 @@
       transition: 0.2s;
       background: #fff;
     }
+
     .store-item:hover {
       background: #f7f7f7;
     }
+
     .store-item.active {
       border-color: #222;
       background: #f3f3f3;
     }
+
     .store-item-title {
       font-size: 15px;
       font-weight: 700;
       margin-bottom: 6px;
     }
+
     .store-item-address {
       font-size: 13px;
       color: #555;
       line-height: 1.4;
       margin-bottom: 4px;
     }
+
     .store-item-detail-address {
       font-size: 12px;
       color: #777;
       line-height: 1.4;
       margin-bottom: 6px;
     }
+
     .store-item-meta {
       font-size: 12px;
       color: #666;
       line-height: 1.5;
     }
+
     .map-wrap {
       flex: 1;
       position: relative;
     }
+
     #map {
       width: 100%;
       height: 100%;
       background: #f1f3f5;
     }
+
     .sidebar-toggle {
       position: absolute;
       top: 20px;
@@ -228,6 +268,7 @@
       text-align: center;
       white-space: nowrap;
     }
+
     .top-buttons {
       position: absolute;
       top: 20px;
@@ -236,6 +277,7 @@
       gap: 12px;
       z-index: 20;
     }
+
     .top-buttons button {
       padding: 10px 14px;
       font-size: 14px;
@@ -249,9 +291,11 @@
       text-align: center;
       white-space: nowrap;
     }
+
     .roadview-pick-btn.active {
       background: #0b63ce;
     }
+
     .roadview-wrap {
       position: absolute;
       top: 70px;
@@ -266,9 +310,11 @@
       z-index: 20;
       display: none;
     }
+
     .roadview-wrap.open {
       display: block;
     }
+
     .roadview-wrap.expanded {
       top: 70px;
       left: 20px;
@@ -276,6 +322,7 @@
       width: auto;
       height: calc(100% - 90px);
     }
+
     .roadview-header {
       height: 44px;
       padding: 0 12px;
@@ -287,20 +334,24 @@
       font-size: 14px;
       font-weight: 700;
     }
+
     .roadview-toolbar {
       display: flex;
       gap: 8px;
       align-items: center;
     }
+
     .roadview-header button,
     .roadview-toolbar button {
       width: auto;
       padding: 6px 10px;
     }
+
     #roadview {
       width: 100%;
       height: calc(100% - 44px);
     }
+
     .legend-toggle {
       position: absolute;
       right: 20px;
@@ -316,6 +367,7 @@
       cursor: pointer;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
     }
+
     .map-legend {
       position: absolute;
       right: 64px;
@@ -331,24 +383,29 @@
       min-width: 160px;
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
+
     .map-legend.collapsed {
       opacity: 0;
       pointer-events: none;
       transform: translateX(10px);
     }
+
     .map-legend-title {
       font-weight: 700;
       margin-bottom: 6px;
     }
+
     .map-legend-item {
       display: flex;
       align-items: center;
       gap: 8px;
     }
+
     .map-legend-item img {
       width: 18px;
       height: 18px;
     }
+
     .info-box {
       padding: 16px;
       width: 360px;
@@ -356,15 +413,18 @@
       font-size: 14px;
       word-break: keep-all;
     }
+
     .info-box h3 {
       margin: 0 0 10px;
       font-size: 18px;
     }
+
     .info-box strong {
       display: inline-block;
       width: 70px;
       vertical-align: top;
     }
+
     .roadview-picker-pin {
       width: 26px;
       height: 38px;
@@ -374,14 +434,51 @@
       pointer-events: none;
     }
 
+    .status-top {
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-weight: 800;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .status-open {
+      background: #e6f4ea;
+      color: #2f9e44;
+    }
+
+    .status-break {
+      background: #f7efe7;
+      color: #8b5e3c;
+    }
+
+    .status-closed {
+      background: #fff5f5;
+      color: #e03131;
+    }
+
+    .status-empty {
+      background: #f1f3f5;
+      color: #868e96;
+    }
+
+    .status-sub {
+      font-size: 15px;
+      font-weight: 800;
+      margin-top: 0;
+    }
+
     @media (max-width: 768px) {
       html, body { height: auto; }
+
       .layout {
         display: flex;
         flex-direction: column;
         height: auto;
         min-height: 100vh;
       }
+
       .map-wrap {
         order: 1;
         width: 100%;
@@ -390,6 +487,7 @@
         position: relative;
         overflow: hidden;
       }
+
       .sidebar {
         order: 2;
         width: 100%;
@@ -398,6 +496,7 @@
         border-right: none;
         border-bottom: 1px solid #e5e5e5;
       }
+
       .sidebar.collapsed {
         width: 100%;
         min-width: 100%;
@@ -405,28 +504,35 @@
         min-height: 0;
         border-bottom: none;
       }
+
       #map {
         width: 100%;
         height: 100%;
         min-height: 380px;
       }
+
       .info-box {
         width: 240px;
         padding: 10px;
         font-size: 12px;
         line-height: 1.6;
       }
+
       .info-box h3 {
         margin: 0 0 6px;
         font-size: 16px;
       }
+
       .info-box strong { width: 54px; }
+
       .search-box {
         display: grid;
         grid-template-columns: 1fr;
         gap: 8px;
       }
+
       .selected-store { min-height: auto; }
+
       .sidebar-toggle {
         top: 12px;
         left: 12px;
@@ -434,16 +540,19 @@
         font-size: 12px;
         min-width: 70px;
       }
+
       .top-buttons {
         top: 12px;
         right: 50px;
         gap: 6px;
       }
+
       .top-buttons button {
         padding: 8px 10px;
         font-size: 12px;
         min-width: 70px;
       }
+
       .roadview-wrap {
         top: 56px;
         right: 12px;
@@ -451,6 +560,7 @@
         width: auto;
         height: 240px;
       }
+
       .roadview-wrap.expanded {
         top: 56px;
         left: 12px;
@@ -458,6 +568,7 @@
         width: auto;
         height: calc(100% - 68px);
       }
+
       .legend-toggle {
         right: 12px;
         bottom: 12px;
@@ -465,6 +576,7 @@
         height: 32px;
         font-size: 12px;
       }
+
       .map-legend {
         right: 52px;
         bottom: 12px;
@@ -472,7 +584,9 @@
         min-width: 140px;
         padding: 10px 12px;
       }
+
       .store-item-title { font-size: 14px; }
+
       .store-item-address,
       .store-item-detail-address,
       .store-item-meta,
@@ -481,7 +595,16 @@
         font-size: 12px;
         line-height: 1.5;
       }
+
       .selected-store .label { width: 60px; }
+
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-full {
+        grid-column: auto;
+      }
     }
   </style>
 </head>
@@ -497,19 +620,31 @@
         </div>
 
         <div class="filter-grid">
-          <div class="filter-box">
+          <div class="filter-box filter-full">
             <select id="managerFilter" onchange="applyFilters()">
               <option value="">전체 담당자</option>
             </select>
           </div>
-          <div class="filter-box">
+
+          <div class="filter-box filter-full">
             <select id="brandFilter" onchange="applyFilters()">
               <option value="">전체 브랜드</option>
             </select>
           </div>
+
           <div class="filter-box">
             <select id="regionFilter" onchange="applyFilters()">
               <option value="">전체 지역</option>
+            </select>
+          </div>
+
+          <div class="filter-box">
+            <select id="openFilter" onchange="applyFilters()">
+              <option value="">운영 여부</option>
+              <option value="open">운영중</option>
+              <option value="break">브레이크타임</option>
+              <option value="closed">운영종료</option>
+              <option value="empty">운영정보 없음</option>
             </select>
           </div>
         </div>
@@ -661,6 +796,106 @@
       return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
     }
 
+    function parseTimeRange(text) {
+      const value = String(text || "").trim();
+      const match = value.match(/^(\d{2}:\d{2})~(\d{2}:\d{2})$/);
+      if (!match) return null;
+
+      const [startH, startM] = match[1].split(":").map(Number);
+      const [endH, endM] = match[2].split(":").map(Number);
+
+      return {
+        start: startH * 60 + startM,
+        end: endH * 60 + endM
+      };
+    }
+
+    function formatRemainTime(minutes) {
+      const safeMinutes = Math.max(0, Math.floor(minutes));
+
+      if (safeMinutes <= 0) return "곧";
+
+      const h = Math.floor(safeMinutes / 60);
+      const m = safeMinutes % 60;
+
+      if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+      if (h > 0) return `${h}시간`;
+      return `${m}분`;
+    }
+
+    function getStatusClass(status) {
+      if (status === "운영중") return "status-open";
+      if (status === "브레이크타임") return "status-break";
+      if (status === "정보없음") return "status-empty";
+      return "status-closed";
+    }
+
+    function getStoreStatus(store) {
+      const now = new Date();
+      const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+      const today = dayNames[now.getDay()];
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const operatingDays = String(store.operating_days || "").trim();
+      const operatingHours = String(store.operating_hours || "").trim();
+      const breakTime = String(store.break_time || "").trim();
+
+      if (!operatingDays || !operatingHours) {
+        return {
+          status: "정보없음",
+          message: "운영 정보 없음"
+        };
+      }
+
+      const validDays = operatingDays
+        .split(",")
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      const range = parseTimeRange(operatingHours);
+      if (!range) {
+        return {
+          status: "정보없음",
+          message: "운영 정보 없음"
+        };
+      }
+
+      if (!validDays.includes(today)) {
+        return {
+          status: "미운영",
+          message: "운영 종료"
+        };
+      }
+
+      if (nowMinutes < range.start || nowMinutes > range.end) {
+        return {
+          status: "미운영",
+          message: "운영 종료"
+        };
+      }
+
+      const breakRange = breakTime ? parseTimeRange(breakTime) : null;
+
+      if (breakRange && nowMinutes >= breakRange.start && nowMinutes <= breakRange.end) {
+        return {
+          status: "브레이크타임",
+          message: `${formatRemainTime(breakRange.end - nowMinutes)} 후 운영 재개`
+        };
+      }
+
+      if (breakRange && nowMinutes < breakRange.start) {
+        return {
+          status: "운영중",
+          message: `${formatRemainTime(breakRange.start - nowMinutes)} 후 브레이크타임`
+        };
+      }
+
+      return {
+        status: "운영중",
+        message: `${formatRemainTime(range.end - nowMinutes)} 후 운영 종료`
+      };
+    }
+
     function isMobileDevice() {
       return window.matchMedia("(max-width: 768px)").matches;
     }
@@ -677,22 +912,34 @@
         keyword: normalizeText(document.getElementById("searchInput").value),
         manager: document.getElementById("managerFilter").value,
         brand: document.getElementById("brandFilter").value,
-        region: document.getElementById("regionFilter").value
+        region: document.getElementById("regionFilter").value,
+        openFilter: document.getElementById("openFilter").value
       };
     }
 
     function getFilteredBaseStores(filters = {}) {
-      const { keyword = "", manager = "", brand = "", region = "" } = filters;
+      const { keyword = "", manager = "", brand = "", region = "", openFilter = "" } = filters;
       let results = [...storesForFilter];
 
       if (manager) results = results.filter(store => store.manager === manager);
       if (brand) results = results.filter(store => store.brand === brand);
       if (region) results = results.filter(store => store.region === region);
 
+      if (openFilter) {
+        results = results.filter(store => {
+          const status = getStoreStatus(store).status;
+          if (openFilter === "open") return status === "운영중";
+          if (openFilter === "break") return status === "브레이크타임";
+          if (openFilter === "closed") return status === "미운영";
+          if (openFilter === "empty") return status === "정보없음";
+          return true;
+        });
+      }
+
       if (keyword) {
         results = results.filter(store => {
           const text = normalizeText(
-            `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.detail_address} ${store.region} ${store.note}`
+            `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.detail_address} ${store.region} ${store.note} ${store.operating_hours} ${store.operating_days} ${store.break_time} ${store.phone}`
           );
           return text.includes(keyword);
         });
@@ -711,6 +958,7 @@
       const managerFilter = document.getElementById("managerFilter");
       const brandFilter = document.getElementById("brandFilter");
       const regionFilter = document.getElementById("regionFilter");
+      const openFilter = document.getElementById("openFilter");
 
       const current = getCurrentFilterValues();
 
@@ -719,14 +967,16 @@
         getFilteredBaseStores({
           keyword: current.keyword,
           manager: current.manager,
-          region: current.region
+          region: current.region,
+          openFilter: current.openFilter
         }).map(store => store.brand)
       );
       const regions = createUniqueOptions(
         getFilteredBaseStores({
           keyword: current.keyword,
           manager: current.manager,
-          brand: current.brand
+          brand: current.brand,
+          openFilter: current.openFilter
         }).map(store => store.region)
       );
 
@@ -741,6 +991,8 @@
       if (managers.includes(current.manager)) managerFilter.value = current.manager;
       if (brands.includes(current.brand)) brandFilter.value = current.brand;
       if (regions.includes(current.region)) regionFilter.value = current.region;
+
+      openFilter.value = current.openFilter;
     }
 
     function renderLegend() {
@@ -785,13 +1037,23 @@
         return;
       }
 
+      const statusInfo = getStoreStatus(store);
+      const statusClass = getStatusClass(statusInfo.status);
+
       box.innerHTML = `
+        <div class="status-top ${statusClass}">
+          <div class="status-sub">${statusInfo.message}</div>
+        </div>
+
         <h2>${store.name}</h2>
         <div class="row"><span class="label">담당자</span>${store.manager || "-"}</div>
         <div class="row"><span class="label">브랜드</span>${store.brand || "-"}</div>
         <div class="row"><span class="label">지역</span>${store.region || "-"}</div>
         <div class="row"><span class="label">주소</span>${store.address || "-"}</div>
         <div class="row"><span class="label">상세주소</span>${store.detail_address || "-"}</div>
+        <div class="row"><span class="label">운영요일</span>${store.operating_days || "-"}</div>
+        <div class="row"><span class="label">운영시간</span>${store.operating_hours || "-"}</div>
+        <div class="row"><span class="label">브레이크</span>${store.break_time || "-"}</div>
         <div class="row"><span class="label">전화</span>${store.phone || "-"}</div>
         <div class="row"><span class="label">비고</span>${store.note || "-"}</div>
         <div class="selected-actions">
@@ -830,6 +1092,8 @@
       const fragment = document.createDocumentFragment();
 
       sortedItems.forEach(store => {
+        const statusInfo = getStoreStatus(store);
+
         const div = document.createElement("div");
         div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
 
@@ -839,6 +1103,9 @@
           <div class="store-item-detail-address">${store.detail_address || ""}</div>
           <div class="store-item-meta">
             담당자: ${store.manager || "-"} / 브랜드: ${store.brand || "-"} / 지역: ${store.region || "-"}
+          </div>
+          <div class="store-item-meta">
+            안내: ${statusInfo.message}
           </div>
         `;
 
@@ -921,6 +1188,8 @@
     }
 
     function createInfoWindowContent(store, region) {
+      const statusInfo = getStoreStatus(store);
+
       return `
         <div class="info-box">
           <h3>${store.name}</h3>
@@ -929,6 +1198,10 @@
           <div><strong>지역</strong> <span>${region || "-"}</span></div>
           <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
           <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
+          <div><strong>안내</strong> <span>${statusInfo.message}</span></div>
+          <div><strong>운영요일</strong> <span>${store.operating_days || "-"}</span></div>
+          <div><strong>운영시간</strong> <span>${store.operating_hours || "-"}</span></div>
+          <div><strong>브레이크</strong> <span>${store.break_time || "-"}</span></div>
           <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
           <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
         </div>
@@ -943,6 +1216,8 @@
           content: createInfoWindowContent(store, store.region),
           removable: true
         });
+      } else {
+        store.infowindow.setContent(createInfoWindowContent(store, store.region));
       }
 
       closeAllInfoWindows();
@@ -1014,7 +1289,7 @@
 
       closeAllInfoWindows();
 
-      if (!current.keyword && !current.manager && !current.brand && !current.region) {
+      if (!current.keyword && !current.manager && !current.brand && !current.region && !current.openFilter) {
         selectedStoreName = null;
         updateMarkers(storeMarkers, false);
         renderStoreList(storeMarkers);
@@ -1044,6 +1319,7 @@
       document.getElementById("managerFilter").value = "";
       document.getElementById("brandFilter").value = "";
       document.getElementById("regionFilter").value = "";
+      document.getElementById("openFilter").value = "";
 
       selectedStoreName = null;
       closeAllInfoWindows();
@@ -1297,6 +1573,9 @@
         stores = Array.isArray(data) ? data.map(store => ({
           ...store,
           detail_address: store.detail_address ?? "",
+          operating_days: store.operating_days ?? "",
+          operating_hours: store.operating_hours ?? store.hours ?? store.business_hours ?? "",
+          break_time: store.break_time ?? store.breakTime ?? "",
           lat: store.lat ?? store.latitude ?? "",
           lng: store.lng ?? store.longitude ?? ""
         })) : [];
