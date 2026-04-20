@@ -3,25 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>매장 지도</title>
+  <title>ABLAB 매장 거래처 지도</title>
   <style>
     * { box-sizing: border-box; }
-
     html, body {
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
       background: #f8f9fb;
     }
-
     body { min-height: 100vh; }
-
     .layout {
       display: flex;
       width: 100%;
       height: 100vh;
     }
-
     .sidebar {
       width: 390px;
       min-width: 390px;
@@ -32,33 +28,28 @@
       overflow: hidden;
       transition: width 0.3s ease, min-width 0.3s ease, height 0.3s ease;
     }
-
     .sidebar.collapsed {
       width: 0;
       min-width: 0;
       border-right: none;
       overflow: hidden;
     }
-
     .sidebar-header {
       padding: 20px 16px 12px;
       border-bottom: 1px solid #f0f0f0;
       background: #fff;
       flex-shrink: 0;
     }
-
     .sidebar-title {
       margin: 0 0 14px;
       font-size: 20px;
       font-weight: 700;
     }
-
     .search-box {
       display: flex;
       gap: 8px;
       margin-bottom: 10px;
     }
-
     .search-box input {
       flex: 1;
       padding: 10px;
@@ -66,15 +57,12 @@
       border: 1px solid #d9d9d9;
       border-radius: 8px;
     }
-
     .search-box button,
     .filter-actions button,
     .route-actions button,
     .selected-actions button,
     .roadview-header button,
-    .roadview-toolbar button,
-    .marker-legend-close,
-    .marker-legend-toggle {
+    .roadview-toolbar button {
       padding: 10px 14px;
       font-size: 14px;
       border: none;
@@ -83,13 +71,11 @@
       border-radius: 8px;
       cursor: pointer;
     }
-
     .filter-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 8px;
     }
-
     .filter-box select {
       width: 100%;
       padding: 10px;
@@ -98,7 +84,6 @@
       font-size: 14px;
       background: #fff;
     }
-
     .filter-actions,
     .selected-actions {
       display: flex;
@@ -106,40 +91,34 @@
       margin-top: 10px;
       flex-wrap: wrap;
     }
-
     .filter-actions button.secondary,
     .route-actions button.secondary,
     .selected-actions button.secondary {
       background: #e9ecef;
       color: #222;
     }
-
     .route-box {
       padding: 14px 16px;
       border-bottom: 1px solid #f0f0f0;
       background: #fffdf7;
       flex-shrink: 0;
     }
-
     .route-box h3 {
       margin: 0 0 10px;
       font-size: 16px;
     }
-
     .route-row {
       font-size: 13px;
       line-height: 1.6;
       margin-bottom: 4px;
       color: #444;
     }
-
     .route-label {
       display: inline-block;
       width: 52px;
       font-weight: 700;
       color: #222;
     }
-
     .route-actions {
       display: flex;
       justify-content: space-between;
@@ -147,11 +126,9 @@
       margin-top: 10px;
       flex-wrap: nowrap;
     }
-
     .route-actions button {
       width: calc(50% - 4px);
     }
-
     .sidebar-scroll {
       flex: 1;
       overflow-y: auto;
@@ -159,26 +136,22 @@
       flex-direction: column;
       min-height: 0;
     }
-
     .selected-store {
       padding: 16px;
       border-bottom: 1px solid #f0f0f0;
       background: #fafafa;
-      min-height: 250px;
+      min-height: 210px;
       flex-shrink: 0;
     }
-
     .selected-store h2 {
       margin: 0 0 12px;
       font-size: 18px;
     }
-
     .selected-store .row {
       margin-bottom: 8px;
       font-size: 14px;
       line-height: 1.5;
     }
-
     .selected-store .label {
       display: inline-block;
       width: 72px;
@@ -186,13 +159,11 @@
       color: #333;
       vertical-align: top;
     }
-
     .store-list {
       flex: none;
       overflow: visible;
       padding: 8px;
     }
-
     .store-item {
       padding: 12px;
       border: 1px solid #ececec;
@@ -202,41 +173,44 @@
       transition: 0.2s;
       background: #fff;
     }
-
     .store-item:hover {
       background: #f7f7f7;
     }
-
     .store-item.active {
       border-color: #222;
       background: #f3f3f3;
     }
-
     .store-item-title {
       font-size: 15px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
-
+    .store-item-address {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+    .store-item-detail-address {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
     .store-item-meta {
       font-size: 12px;
       color: #666;
-      line-height: 1.6;
-      margin-bottom: 4px;
-      word-break: keep-all;
+      line-height: 1.5;
     }
-
     .map-wrap {
       flex: 1;
       position: relative;
     }
-
     #map {
       width: 100%;
       height: 100%;
       background: #f1f3f5;
     }
-
     .sidebar-toggle {
       position: absolute;
       top: 20px;
@@ -254,16 +228,14 @@
       text-align: center;
       white-space: nowrap;
     }
-
     .top-buttons {
       position: absolute;
       top: 20px;
-      right: 45px;
+      right: 50px;
       display: flex;
       gap: 12px;
       z-index: 20;
     }
-
     .top-buttons button {
       padding: 10px 14px;
       font-size: 14px;
@@ -277,15 +249,9 @@
       text-align: center;
       white-space: nowrap;
     }
-
     .roadview-pick-btn.active {
       background: #0b63ce;
     }
-
-    .pin-mode-btn.active {
-      background: #0b63ce;
-    }
-
     .roadview-wrap {
       position: absolute;
       top: 70px;
@@ -300,11 +266,9 @@
       z-index: 20;
       display: none;
     }
-
     .roadview-wrap.open {
       display: block;
     }
-
     .roadview-wrap.expanded {
       top: 70px;
       left: 20px;
@@ -312,7 +276,6 @@
       width: auto;
       height: calc(100% - 90px);
     }
-
     .roadview-header {
       height: 44px;
       padding: 0 12px;
@@ -324,24 +287,68 @@
       font-size: 14px;
       font-weight: 700;
     }
-
     .roadview-toolbar {
       display: flex;
       gap: 8px;
       align-items: center;
     }
-
     .roadview-header button,
     .roadview-toolbar button {
       width: auto;
       padding: 6px 10px;
     }
-
     #roadview {
       width: 100%;
       height: calc(100% - 44px);
     }
-
+    .legend-toggle {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 20;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 999px;
+      background: #222;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    }
+    .map-legend {
+      position: absolute;
+      right: 64px;
+      bottom: 20px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.8;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      z-index: 10;
+      min-width: 160px;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .map-legend.collapsed {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(10px);
+    }
+    .map-legend-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .map-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .map-legend-item img {
+      width: 18px;
+      height: 18px;
+    }
     .info-box {
       padding: 16px;
       width: 360px;
@@ -349,18 +356,15 @@
       font-size: 14px;
       word-break: keep-all;
     }
-
     .info-box h3 {
       margin: 0 0 10px;
       font-size: 18px;
     }
-
     .info-box strong {
       display: inline-block;
       width: 70px;
       vertical-align: top;
     }
-
     .roadview-picker-pin {
       width: 26px;
       height: 38px;
@@ -370,130 +374,14 @@
       pointer-events: none;
     }
 
-    .marker-legend {
-      position: absolute;
-      right: 20px;
-      bottom: 20px;
-      z-index: 20;
-      width: 210px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-      overflow: hidden;
-    }
-
-    .marker-legend.hidden {
-      display: none;
-    }
-
-    .marker-legend-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      background: #fafafa;
-      border-bottom: 1px solid #eee;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .marker-legend-close {
-      background: #e9ecef;
-      color: #222;
-      padding: 6px 10px;
-      font-size: 12px;
-    }
-
-    .marker-legend-list {
-      padding: 10px 12px;
-    }
-
-    .marker-legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: #333;
-      margin-bottom: 8px;
-    }
-
-    .marker-legend-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .marker-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      display: inline-block;
-      border: 1px solid rgba(0, 0, 0, 0.15);
-      flex-shrink: 0;
-    }
-
-    .marker-green { background: #2f9e44; }
-    .marker-yellow { background: #f08c00; }
-    .marker-red { background: #e03131; }
-    .marker-blue { background: #1c7ed6; }
-    .marker-gray { background: #ced4da; }
-    .marker-purple { background: #7950f2; }
-    .marker-brown { background: #8b5e3c; }
-
-    .marker-legend-toggle {
-      position: absolute;
-      right: 20px;
-      bottom: 20px;
-      z-index: 20;
-      font-size: 13px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-    }
-
-    .status-top {
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      font-weight: 800;
-      font-size: 16px;
-      line-height: 1.5;
-    }
-
-    .status-open {
-      background: #e6f4ea;
-      color: #2f9e44;
-    }
-
-    .status-break {
-      background: #fff4e6;
-      color: #f08c00;
-    }
-
-    .status-closed {
-      background: #fff5f5;
-      color: #e03131;
-    }
-
-    .status-empty {
-      background: #f1f3f5;
-      color: #868e96;
-    }
-
-    .status-sub {
-      font-size: 15px;
-      font-weight: 800;
-      margin-top: 0;
-    }
-
     @media (max-width: 768px) {
       html, body { height: auto; }
-
       .layout {
         display: flex;
         flex-direction: column;
         height: auto;
         min-height: 100vh;
       }
-
       .map-wrap {
         order: 1;
         width: 100%;
@@ -502,7 +390,6 @@
         position: relative;
         overflow: hidden;
       }
-
       .sidebar {
         order: 2;
         width: 100%;
@@ -511,7 +398,6 @@
         border-right: none;
         border-bottom: 1px solid #e5e5e5;
       }
-
       .sidebar.collapsed {
         width: 100%;
         min-width: 100%;
@@ -519,76 +405,45 @@
         min-height: 0;
         border-bottom: none;
       }
-
       #map {
         width: 100%;
         height: 100%;
         min-height: 380px;
       }
-
       .info-box {
         width: 240px;
         padding: 10px;
         font-size: 12px;
         line-height: 1.6;
       }
-
       .info-box h3 {
         margin: 0 0 6px;
         font-size: 16px;
       }
-
       .info-box strong { width: 54px; }
-
       .search-box {
         display: grid;
         grid-template-columns: 1fr;
         gap: 8px;
       }
-
       .selected-store { min-height: auto; }
-
-      .top-buttons {
-        position: absolute;
+      .sidebar-toggle {
         top: 12px;
         left: 12px;
-        right: auto;
-        bottom: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        z-index: 20;
-      }
-
-      .top-buttons button {
-        padding: 7px 9px;
-        font-size: 11px;
-        min-width: 72px;
-        width: 72px;
-      }
-
-      .marker-legend-toggle {
-        position: absolute;
-        right: 12px;
-        bottom: 56px;
         padding: 8px 10px;
         font-size: 12px;
-        z-index: 20;
+        min-width: 70px;
       }
-
-      .sidebar-toggle {
-        position: absolute;
-        top: auto;
-        left: auto;
-        right: 12px;
-        bottom: 12px;
-        padding: 7px 9px;
-        font-size: 11px;
-        min-width: 72px;
-        width: 72px;
-        z-index: 21;
+      .top-buttons {
+        top: 12px;
+        right: 50px;
+        gap: 6px;
       }
-
+      .top-buttons button {
+        padding: 8px 10px;
+        font-size: 12px;
+        min-width: 70px;
+      }
       .roadview-wrap {
         top: 56px;
         right: 12px;
@@ -596,7 +451,6 @@
         width: auto;
         height: 240px;
       }
-
       .roadview-wrap.expanded {
         top: 56px;
         left: 12px;
@@ -604,46 +458,30 @@
         width: auto;
         height: calc(100% - 68px);
       }
-
+      .legend-toggle {
+        right: 12px;
+        bottom: 12px;
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+      }
+      .map-legend {
+        right: 52px;
+        bottom: 12px;
+        font-size: 12px;
+        min-width: 140px;
+        padding: 10px 12px;
+      }
       .store-item-title { font-size: 14px; }
-
+      .store-item-address,
+      .store-item-detail-address,
       .store-item-meta,
       .selected-store .row,
       .route-row {
         font-size: 12px;
         line-height: 1.5;
       }
-
       .selected-store .label { width: 60px; }
-
-      .filter-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .marker-legend {
-        right: 12px;
-        bottom: 100px;
-        width: 180px;
-      }
-
-      .marker-legend-header {
-        padding: 8px 10px;
-        font-size: 12px;
-      }
-
-      .marker-legend-close {
-        padding: 5px 8px;
-        font-size: 11px;
-      }
-
-      .marker-legend-list {
-        padding: 8px 10px;
-      }
-
-      .marker-legend-item {
-        font-size: 12px;
-        margin-bottom: 6px;
-      }
     }
   </style>
 </head>
@@ -651,31 +489,27 @@
   <div class="layout">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h1 class="sidebar-title">매장 지도</h1>
+        <h1 class="sidebar-title">거래처 매장 지도</h1>
 
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="매장명 / 확인용 / 주소 / 상세주소 검색" />
+          <input type="text" id="searchInput" placeholder="매장명 / 브랜드 / 주소 / 상세주소 검색" />
           <button type="button" onclick="applyFilters()">검색</button>
         </div>
 
         <div class="filter-grid">
           <div class="filter-box">
+            <select id="managerFilter" onchange="applyFilters()">
+              <option value="">전체 담당자</option>
+            </select>
+          </div>
+          <div class="filter-box">
             <select id="brandFilter" onchange="applyFilters()">
-              <option value="">전체 확인용</option>
+              <option value="">전체 브랜드</option>
             </select>
           </div>
           <div class="filter-box">
             <select id="regionFilter" onchange="applyFilters()">
               <option value="">전체 지역</option>
-            </select>
-          </div>
-          <div class="filter-box">
-            <select id="openFilter" onchange="applyFilters()">
-              <option value="">전체 상태</option>
-              <option value="open">운영중</option>
-              <option value="break">브레이크타임</option>
-              <option value="closed">운영종료</option>
-              <option value="empty">운영정보 없음</option>
             </select>
           </div>
         </div>
@@ -710,25 +544,7 @@
       <div class="top-buttons">
         <button type="button" id="roadviewToggle" onclick="toggleRoadviewPanel()">로드뷰</button>
         <button type="button" id="roadviewPickToggle" class="roadview-pick-btn" onclick="toggleRoadviewPickMode()">찍기</button>
-        <button type="button" id="pinModeToggle" class="pin-mode-btn" onclick="togglePinMode()">운영상태</button>
       </div>
-
-      <div id="markerLegend" class="marker-legend hidden">
-        <div class="marker-legend-header">
-          <span id="markerLegendTitle">핀 색상 안내</span>
-          <button type="button" class="marker-legend-close" onclick="toggleMarkerLegend()">닫기</button>
-        </div>
-        <div class="marker-legend-list" id="markerLegendList"></div>
-      </div>
-
-      <button
-        type="button"
-        id="markerLegendToggle"
-        class="marker-legend-toggle"
-        onclick="toggleMarkerLegend()"
-      >
-        핀
-      </button>
 
       <div id="map"></div>
 
@@ -742,18 +558,21 @@
         </div>
         <div id="roadview"></div>
       </div>
+
+      <button id="legendToggle" class="legend-toggle" onclick="toggleLegend()">▶</button>
+      <div class="map-legend collapsed" id="mapLegend"></div>
     </div>
   </div>
 
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=964655d971d3d19d9cfac4fa73893f9e&libraries=services"></script>
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
 
   <script>
     if (window.Kakao && !window.Kakao.isInitialized()) {
-      Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
+      Kakao.init("964655d971d3d19d9cfac4fa73893f9e");
     }
 
-    const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxrO1_ZW7HFoPBvBWqgdrTsOjCpyDx9u2xUZekStJAc0hf_kuU3hC2_zB76SpN01G6f/exec";
+    const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzFmqPMmdvsoaEr7DnuP-uC8y1fq6xDDzLah7poMc-RgQ9nCAnA-mVveEZrXbBKupMm/exec";
 
     let stores = [];
     let storesForFilter = [];
@@ -770,11 +589,6 @@
     let roadviewPickerOverlay = null;
     let isRoadviewPickerVisible = false;
 
-    let relayoutTimer = null;
-    let markersBuildTaskId = 0;
-
-    let currentPinMode = "check";
-
     const mapContainer = document.getElementById("map");
     const mapWrapEl = document.getElementById("mapWrap");
     const sidebarEl = document.getElementById("sidebar");
@@ -790,180 +604,13 @@
     const roadview = new kakao.maps.Roadview(document.getElementById("roadview"));
     const roadviewClient = new kakao.maps.RoadviewClient();
 
-    function createMarkerSvg(color) {
-      return `
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="35" viewBox="0 0 32 35">
-          <path d="M16 0C9.4 0 4 5.4 4 12c0 9.2 12 23 12 23s12-13.8 12-23C28 5.4 22.6 0 16 0z" fill="${color}"/>
-          <circle cx="16" cy="12" r="5" fill="white"/>
-        </svg>
-      `;
-    }
-
-    function makeMarkerImage(color) {
-      const svg = createMarkerSvg(color);
-      const imageSrc = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
-
-      return new kakao.maps.MarkerImage(
-        imageSrc,
-        new kakao.maps.Size(32, 35),
-        {
-          offset: new kakao.maps.Point(16, 35)
-        }
-      );
-    }
-
-    function getCheckPinColor(type) {
-      const value = String(type || "").trim();
-
-      if (!value) return "#7950f2";
-      if (value === "완료") return "#2f9e44";
-      if (value === "확인필요") return "#f08c00";
-      if (value === "미방문") return "#e03131";
-      if (value === "기타") return "#1c7ed6";
-
-      return "#1c7ed6";
-    }
-
-    function parseTimeRange(text) {
-      const value = String(text || "").trim();
-      const match = value.match(/^(\d{2}:\d{2})~(\d{2}:\d{2})$/);
-      if (!match) return null;
-
-      const [startH, startM] = match[1].split(":").map(Number);
-      const [endH, endM] = match[2].split(":").map(Number);
-
-      return {
-        start: startH * 60 + startM,
-        end: endH * 60 + endM
-      };
-    }
-
-    function formatRemainTime(minutes) {
-      const safeMinutes = Math.max(0, Math.floor(minutes));
-
-      if (safeMinutes <= 0) return "곧";
-
-      const h = Math.floor(safeMinutes / 60);
-      const m = safeMinutes % 60;
-
-      if (h > 0 && m > 0) return `${h}시간 ${m}분`;
-      if (h > 0) return `${h}시간`;
-      return `${m}분`;
-    }
-
-    function getStatusClass(status) {
-      if (status === "운영중") return "status-open";
-      if (status === "브레이크타임") return "status-break";
-      if (status === "정보없음") return "status-empty";
-      return "status-closed";
-    }
-
-    function getStoreStatus(store) {
-      const now = new Date();
-      const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-      const today = dayNames[now.getDay()];
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-      const operatingDays = String(store.operating_days || "").trim();
-      const operatingHours = String(store.operating_hours || "").trim();
-      const breakTime = String(store.break_time || "").trim();
-
-      if (!operatingDays || !operatingHours) {
-        return {
-          status: "정보없음",
-          message: "운영 정보 없음"
-        };
-      }
-
-      const validDays = operatingDays
-        .split(",")
-        .map(v => v.trim())
-        .filter(Boolean);
-
-      const range = parseTimeRange(operatingHours);
-      if (!range) {
-        return {
-          status: "정보없음",
-          message: "운영 정보 없음"
-        };
-      }
-
-      if (!validDays.includes(today)) {
-        return {
-          status: "미운영",
-          message: "운영 종료"
-        };
-      }
-
-      if (nowMinutes < range.start || nowMinutes > range.end) {
-        return {
-          status: "미운영",
-          message: "운영 종료"
-        };
-      }
-
-      const breakRange = breakTime ? parseTimeRange(breakTime) : null;
-
-      if (breakRange && nowMinutes >= breakRange.start && nowMinutes <= breakRange.end) {
-        return {
-          status: "브레이크타임",
-          message: `${formatRemainTime(breakRange.end - nowMinutes)} 후 운영 재개`
-        };
-      }
-
-      if (breakRange && nowMinutes < breakRange.start) {
-        return {
-          status: "운영중",
-          message: `${formatRemainTime(breakRange.start - nowMinutes)} 후 브레이크타임`
-        };
-      }
-
-      return {
-        status: "운영중",
-        message: `${formatRemainTime(range.end - nowMinutes)} 후 운영 종료`
-      };
-    }
-
-    function isStoreOpen(store) {
-      const statusInfo = getStoreStatus(store);
-      return statusInfo.status === "운영중";
-    }
-
-    function getOpenStatusPinColor(store) {
-      const statusInfo = getStoreStatus(store);
-
-      if (statusInfo.status === "운영중") return "#2f9e44";
-      if (statusInfo.status === "브레이크타임") return "#f08c00";
-      if (statusInfo.status === "미운영") return "#ced4da";
-      return "#8b5e3c";
-    }
-
-    function getPinPriority(store) {
-      if (currentPinMode === "open") {
-        const status = getStoreStatus(store).status;
-
-        if (status === "정보없음") return 0;
-        if (status === "미운영") return 1;
-        if (status === "브레이크타임") return 2;
-        if (status === "운영중") return 3;
-        return 0;
-      }
-
-      const value = String(store.brand || "").trim();
-      if (value === "미방문") return 0;
-      if (value === "확인필요") return 1;
-      if (value === "완료") return 2;
-      if (value === "기타") return 3;
-      if (!value) return 4;
-      return 3;
-    }
-
-    function getMarkerImage(store) {
-      if (currentPinMode === "open") {
-        return makeMarkerImage(getOpenStatusPinColor(store));
-      }
-      return makeMarkerImage(getCheckPinColor(store.brand));
-    }
+    const managerMarkerColors = {
+      "김세연": "blue",
+      "김광태": "pink",
+      "최낙현": "yellow",
+      "이승우": "red",
+      "센터": "green"
+    };
 
     function normalizeText(text) {
       return String(text || "").toLowerCase().replace(/\s+/g, "").trim();
@@ -1003,155 +650,44 @@
       }));
     }
 
+    function getMarkerImageByManager(manager) {
+      const color = managerMarkerColors[manager] || "purple";
+      const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+      const imageSize = new kakao.maps.Size(32, 32);
+      const imageOption = { offset: new kakao.maps.Point(16, 32) };
+      return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+    }
+
     function isMobileDevice() {
       return window.matchMedia("(max-width: 768px)").matches;
     }
 
     function relayoutMapSafely() {
-      clearTimeout(relayoutTimer);
-      relayoutTimer = setTimeout(() => {
-        map.relayout();
-      }, 120);
-    }
-
-    function renderMarkerLegend() {
-      const titleEl = document.getElementById("markerLegendTitle");
-      const listEl = document.getElementById("markerLegendList");
-      if (!titleEl || !listEl) return;
-
-      if (currentPinMode === "open") {
-        titleEl.textContent = "운영상태 핀 안내";
-        listEl.innerHTML = `
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-green"></span>
-            <span>운영중</span>
-          </div>
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-yellow"></span>
-            <span>브레이크타임</span>
-          </div>
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-gray"></span>
-            <span>운영종료</span>
-          </div>
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-brown"></span>
-            <span>운영정보 없음</span>
-          </div>
-        `;
-      } else {
-        titleEl.textContent = "확인용 핀 안내";
-        listEl.innerHTML = `
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-green"></span>
-            <span>완료</span>
-          </div>
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-yellow"></span>
-            <span>확인필요</span>
-          </div>
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-red"></span>
-            <span>미방문</span>
-          </div>
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-blue"></span>
-            <span>기타</span>
-          </div>
-          <div class="marker-legend-item">
-            <span class="marker-dot marker-purple"></span>
-            <span>빈칸</span>
-          </div>
-        `;
-      }
-    }
-
-    function toggleMarkerLegend() {
-      const legend = document.getElementById("markerLegend");
-      const toggleBtn = document.getElementById("markerLegendToggle");
-
-      if (!legend || !toggleBtn) return;
-
-      const isHidden = legend.classList.contains("hidden");
-
-      if (isHidden) {
-        renderMarkerLegend();
-        legend.classList.remove("hidden");
-        toggleBtn.style.display = "none";
-      } else {
-        legend.classList.add("hidden");
-        toggleBtn.style.display = "block";
-      }
-    }
-
-    function refreshMarkerImages() {
-      const orderedStores = [...storeMarkers].sort((a, b) => getPinPriority(a) - getPinPriority(b));
-
-      orderedStores.forEach(store => {
-        if (store.marker) {
-          const isVisible = !!store.marker.getMap();
-          store.marker.setMap(null);
-          store.marker.setImage(getMarkerImage(store));
-          store.marker.setMap(isVisible ? map : null);
-        }
-      });
-    }
-
-    function togglePinMode() {
-      const button = document.getElementById("pinModeToggle");
-
-      if (currentPinMode === "check") {
-        currentPinMode = "open";
-        button.textContent = "확인중";
-        button.classList.add("active");
-      } else {
-        currentPinMode = "check";
-        button.textContent = "운영상태";
-        button.classList.remove("active");
-      }
-
-      renderMarkerLegend();
-      refreshMarkerImages();
-
-      const selected = getSelectedStoreData();
-      if (selected) {
-        renderSelectedStore(selected);
-        closeAllInfoWindows();
-        openStoreInfo(selected);
-      }
+      setTimeout(() => map.relayout(), 80);
+      setTimeout(() => map.relayout(), 220);
     }
 
     function getCurrentFilterValues() {
       return {
         keyword: normalizeText(document.getElementById("searchInput").value),
+        manager: document.getElementById("managerFilter").value,
         brand: document.getElementById("brandFilter").value,
-        region: document.getElementById("regionFilter").value,
-        openFilter: document.getElementById("openFilter").value
+        region: document.getElementById("regionFilter").value
       };
     }
 
     function getFilteredBaseStores(filters = {}) {
-      const { keyword = "", brand = "", region = "", openFilter = "" } = filters;
+      const { keyword = "", manager = "", brand = "", region = "" } = filters;
       let results = [...storesForFilter];
 
+      if (manager) results = results.filter(store => store.manager === manager);
       if (brand) results = results.filter(store => store.brand === brand);
       if (region) results = results.filter(store => store.region === region);
-
-      if (openFilter) {
-        results = results.filter(store => {
-          const status = getStoreStatus(store).status;
-          if (openFilter === "open") return status === "운영중";
-          if (openFilter === "break") return status === "브레이크타임";
-          if (openFilter === "closed") return status === "미운영";
-          if (openFilter === "empty") return status === "정보없음";
-          return true;
-        });
-      }
 
       if (keyword) {
         results = results.filter(store => {
           const text = normalizeText(
-            `${store.name} ${store.brand} ${store.address} ${store.detail_address} ${store.region} ${store.note} ${store.operating_hours} ${store.operating_days} ${store.break_time} ${store.phone}`
+            `${store.name} ${store.manager} ${store.brand} ${store.address} ${store.detail_address} ${store.region} ${store.note}`
           );
           return text.includes(keyword);
         });
@@ -1167,35 +703,65 @@
     }
 
     function renderFilterOptions() {
+      const managerFilter = document.getElementById("managerFilter");
       const brandFilter = document.getElementById("brandFilter");
       const regionFilter = document.getElementById("regionFilter");
 
       const current = getCurrentFilterValues();
 
+      const managers = createUniqueOptions(storesForFilter.map(store => store.manager));
       const brands = createUniqueOptions(
         getFilteredBaseStores({
           keyword: current.keyword,
-          region: current.region,
-          openFilter: current.openFilter
+          manager: current.manager,
+          region: current.region
         }).map(store => store.brand)
       );
-
       const regions = createUniqueOptions(
         getFilteredBaseStores({
           keyword: current.keyword,
-          brand: current.brand,
-          openFilter: current.openFilter
+          manager: current.manager,
+          brand: current.brand
         }).map(store => store.region)
       );
 
-      brandFilter.innerHTML = '<option value="">전체 확인용</option>';
+      managerFilter.innerHTML = '<option value="">전체 담당자</option>';
+      brandFilter.innerHTML = '<option value="">전체 브랜드</option>';
       regionFilter.innerHTML = '<option value="">전체 지역</option>';
 
+      managers.forEach(value => managerFilter.appendChild(new Option(value, value)));
       brands.forEach(value => brandFilter.appendChild(new Option(value, value)));
       regions.forEach(value => regionFilter.appendChild(new Option(value, value)));
 
+      if (managers.includes(current.manager)) managerFilter.value = current.manager;
       if (brands.includes(current.brand)) brandFilter.value = current.brand;
       if (regions.includes(current.region)) regionFilter.value = current.region;
+    }
+
+    function renderLegend() {
+      const legend = document.getElementById("mapLegend");
+      const managers = createUniqueOptions(stores.map(store => store.manager));
+
+      let html = '<div class="map-legend-title">담당자 핀 색상</div>';
+      managers.forEach(manager => {
+        const color = managerMarkerColors[manager] || "purple";
+        const icon = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+        html += `
+          <div class="map-legend-item">
+            <img src="${icon}" alt="${manager}">
+            <span>${manager}</span>
+          </div>
+        `;
+      });
+
+      legend.innerHTML = html;
+    }
+
+    function toggleLegend() {
+      const legend = document.getElementById("mapLegend");
+      const toggle = document.getElementById("legendToggle");
+      legend.classList.toggle("collapsed");
+      toggle.textContent = legend.classList.contains("collapsed") ? "▶" : "◀";
     }
 
     function renderRouteInfo() {
@@ -1214,22 +780,14 @@
         return;
       }
 
-      const statusInfo = getStoreStatus(store);
-      const statusClass = getStatusClass(statusInfo.status);
-
       box.innerHTML = `
-        <div class="status-top ${statusClass}">
-          <div class="status-sub">${statusInfo.message}</div>
-        </div>
-
         <h2>${store.name}</h2>
+        <div class="row"><span class="label">담당자</span>${store.manager || "-"}</div>
+        <div class="row"><span class="label">브랜드</span>${store.brand || "-"}</div>
+        <div class="row"><span class="label">지역</span>${store.region || "-"}</div>
         <div class="row"><span class="label">주소</span>${store.address || "-"}</div>
         <div class="row"><span class="label">상세주소</span>${store.detail_address || "-"}</div>
-        <div class="row"><span class="label">운영요일</span>${store.operating_days || "-"}</div>
-        <div class="row"><span class="label">운영시간</span>${store.operating_hours || "-"}</div>
-        <div class="row"><span class="label">브레이크</span>${store.break_time || "-"}</div>
         <div class="row"><span class="label">전화</span>${store.phone || "-"}</div>
-        <div class="row"><span class="label">확인용</span>${store.brand || "-"}</div>
         <div class="row"><span class="label">비고</span>${store.note || "-"}</div>
         <div class="selected-actions">
           <button type="button" onclick="setSelectedAsStart()">출발지로 설정</button>
@@ -1264,36 +822,25 @@
         String(a.name || "").localeCompare(String(b.name || ""), "ko")
       );
 
-      const fragment = document.createDocumentFragment();
-
       sortedItems.forEach(store => {
-        const statusInfo = getStoreStatus(store);
-
         const div = document.createElement("div");
         div.className = "store-item" + (selectedStoreName === store.name ? " active" : "");
 
         div.innerHTML = `
           <div class="store-item-title">${store.name}</div>
-          <div class="store-item-meta">지역: ${store.region || "-"}</div>
-          <div class="store-item-meta">주소: ${store.address || "-"}</div>
-          <div class="store-item-meta">상세주소: ${store.detail_address || "-"}</div>
-          <div class="store-item-meta">운영요일: ${store.operating_days || "-"}</div>
-          <div class="store-item-meta">운영시간: ${store.operating_hours || "-"}</div>
-          <div class="store-item-meta">브레이크: ${store.break_time || "-"}</div>
-          <div class="store-item-meta">전화: ${store.phone || "-"}</div>
-          <div class="store-item-meta">확인용: ${store.brand || "-"}</div>
-          <div class="store-item-meta">안내: ${statusInfo.message}</div>
-          <div class="store-item-meta">비고: ${store.note || "-"}</div>
+          <div class="store-item-address">${store.address || "-"}</div>
+          <div class="store-item-detail-address">${store.detail_address || ""}</div>
+          <div class="store-item-meta">
+            담당자: ${store.manager || "-"} / 브랜드: ${store.brand || "-"} / 지역: ${store.region || "-"}
+          </div>
         `;
 
         div.addEventListener("click", function() {
           selectStore(store);
         });
 
-        fragment.appendChild(div);
+        list.appendChild(div);
       });
-
-      list.appendChild(fragment);
     }
 
     function updateMarkers(results, shouldFitBounds = false) {
@@ -1364,37 +911,8 @@
       }
     }
 
-    function createInfoWindowContent(store, region) {
-      const statusInfo = getStoreStatus(store);
-
-      return `
-        <div class="info-box">
-          <h3>${store.name}</h3>
-          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
-          <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
-          <div><strong>안내</strong> <span>${statusInfo.message}</span></div>
-          <div><strong>운영요일</strong> <span>${store.operating_days || "-"}</span></div>
-          <div><strong>운영시간</strong> <span>${store.operating_hours || "-"}</span></div>
-          <div><strong>브레이크</strong> <span>${store.break_time || "-"}</span></div>
-          <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
-          <div><strong>확인용</strong> <span>${store.brand || "-"}</span></div>
-          <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
-        </div>
-      `;
-    }
-
     function openStoreInfo(store) {
-      if (!store || !store.marker) return;
-
-      if (!store.infowindow) {
-        store.infowindow = new kakao.maps.InfoWindow({
-          content: createInfoWindowContent(store, store.region),
-          removable: true
-        });
-      } else {
-        store.infowindow.setContent(createInfoWindowContent(store, store.region));
-      }
-
+      if (!store || !store.marker || !store.infowindow) return;
       closeAllInfoWindows();
       store.infowindow.open(map, store.marker);
       openedInfowindow = store.infowindow;
@@ -1422,8 +940,8 @@
         moveMapToStore(store);
         setTimeout(() => {
           openStoreInfo(store);
-        }, 120);
-      }, 40);
+        }, 180);
+      }, 50);
     }
 
     function setSelectedAsStart() {
@@ -1464,7 +982,7 @@
 
       closeAllInfoWindows();
 
-      if (!current.keyword && !current.brand && !current.region && !current.openFilter) {
+      if (!current.keyword && !current.manager && !current.brand && !current.region) {
         selectedStoreName = null;
         updateMarkers(storeMarkers, false);
         renderStoreList(storeMarkers);
@@ -1491,9 +1009,9 @@
 
     function resetFilters() {
       document.getElementById("searchInput").value = "";
+      document.getElementById("managerFilter").value = "";
       document.getElementById("brandFilter").value = "";
       document.getElementById("regionFilter").value = "";
-      document.getElementById("openFilter").value = "";
 
       selectedStoreName = null;
       closeAllInfoWindows();
@@ -1628,7 +1146,6 @@
     }
 
     function resetMapData() {
-      markersBuildTaskId += 1;
       closeAllInfoWindows();
 
       storeMarkers.forEach(store => {
@@ -1647,6 +1164,21 @@
       renderRouteInfo();
     }
 
+    function createInfoWindowContent(store, region) {
+      return `
+        <div class="info-box">
+          <h3>${store.name}</h3>
+          <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
+          <div><strong>브랜드</strong> <span>${store.brand || "-"}</span></div>
+          <div><strong>지역</strong> <span>${region || "-"}</span></div>
+          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
+          <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
+          <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
+          <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
+        </div>
+      `;
+    }
+
     function hasValidCoords(store) {
       return (
         store.lat !== undefined &&
@@ -1662,18 +1194,22 @@
       const region = extractRegion(store.address);
 
       const marker = new kakao.maps.Marker({
+        map: map,
         position: coords,
-        image: getMarkerImage(store)
+        image: getMarkerImageByManager(store.manager)
       });
 
-      marker.setMap(map);
+      const infowindow = new kakao.maps.InfoWindow({
+        content: createInfoWindowContent(store, region),
+        removable: true
+      });
 
       const storeData = {
         ...store,
         region,
         coords,
         marker,
-        infowindow: null
+        infowindow
       };
 
       kakao.maps.event.addListener(marker, "click", function() {
@@ -1683,43 +1219,13 @@
       storeMarkers.push(storeData);
     }
 
-    function buildMarkersInChunks(validStores, chunkSize = 40) {
-      validStores.sort((a, b) => getPinPriority(a) - getPinPriority(b));
-
-      const taskId = markersBuildTaskId;
-      let index = 0;
-
-      function processChunk() {
-        if (taskId !== markersBuildTaskId) return;
-
-        const end = Math.min(index + chunkSize, validStores.length);
-
-        for (let i = index; i < end; i++) {
-          const store = validStores[i];
-          const coords = new kakao.maps.LatLng(Number(store.lat), Number(store.lng));
-          buildStoreMarker(store, coords);
-        }
-
-        index = end;
-
-        if (index < validStores.length) {
-          requestAnimationFrame(processChunk);
-        } else {
-          updateMarkers(storeMarkers, false);
-          relayoutMapSafely();
-        }
-      }
-
-      requestAnimationFrame(processChunk);
-    }
-
     function initializeStores() {
       resetMapData();
       rebuildStoresForFilter();
-      renderMarkerLegend();
 
       if (!stores.length) {
         renderFilterOptions();
+        renderLegend();
         renderRouteInfo();
         renderStoreList([]);
         renderNoResultMessage();
@@ -1727,12 +1233,19 @@
       }
 
       renderFilterOptions();
+      renderLegend();
       renderRouteInfo();
       renderStoreList(storesForFilter);
       renderDefaultMessage();
 
       const validStores = stores.filter(hasValidCoords);
-      buildMarkersInChunks(validStores, 40);
+      validStores.forEach(store => {
+        const coords = new kakao.maps.LatLng(Number(store.lat), Number(store.lng));
+        buildStoreMarker(store, coords);
+      });
+
+      updateMarkers(storeMarkers, false);
+      relayoutMapSafely();
     }
 
     async function loadStoresFromSheet() {
@@ -1742,15 +1255,12 @@
       }
 
       try {
-        const response = await fetch(SHEET_API_URL, { cache: "no-store" });
+        const response = await fetch(SHEET_API_URL);
         const data = await response.json();
 
         stores = Array.isArray(data) ? data.map(store => ({
           ...store,
           detail_address: store.detail_address ?? "",
-          operating_days: store.operating_days ?? "",
-          operating_hours: store.operating_hours ?? store.hours ?? store.business_hours ?? "",
-          break_time: store.break_time ?? store.breakTime ?? "",
           lat: store.lat ?? store.latitude ?? "",
           lng: store.lng ?? store.longitude ?? ""
         })) : [];
@@ -1777,7 +1287,7 @@
 
       if (!Kakao.isInitialized()) {
         try {
-          Kakao.init("여기에_카카오_자바스크립트키");
+          Kakao.init("여기에_카카오_JS_KEY");
         } catch (error) {
           console.error(error);
           alert("카카오 SDK 초기화에 실패했습니다.");
