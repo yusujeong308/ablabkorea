@@ -1412,8 +1412,7 @@
         map.setCenter(movedCenter);
       } else {
         map.setLevel(3);
-        const movedCenter = getOffsetCenter(store.coords, 170, 90);
-        map.setCenter(movedCenter);
+        map.setCenter(store.coords);
       }
     }
 
@@ -1436,7 +1435,7 @@
       if (!store || !store.marker) return;
 
       const yAnchor = isMobileDevice() ? 2.15 : 2.25;
-      const xAnchor = 0.3;
+      const xAnchor = 0.5;
       const infoContent = createInfoWindowContent(store);
 
       if (!store.infowindow) {
