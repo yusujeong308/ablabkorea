@@ -395,6 +395,7 @@
       cursor: pointer;
       padding: 0;
       font-family: Arial, sans-serif;
+      z-index: 5;
     }
 
     .info-window-close:hover {
@@ -661,9 +662,6 @@
 
       .selected-store .label { width: 60px; }
 
-      /* 모바일에서도 웹처럼:
-         담당자/브랜드는 한 줄씩,
-         전체 지역/운영 여부는 가로 2칸 */
       .filter-grid {
         grid-template-columns: 1fr 1fr;
       }
@@ -697,7 +695,6 @@
         margin-bottom: 6px;
       }
 
-      /* 모바일 지도 거리 표시를 왼쪽 위로 이동 */
       .wrap_map .scale,
       #map .scale,
       .scale {
@@ -844,6 +841,8 @@
     let relayoutTimer = null;
     let markersBuildTaskId = 0;
     let currentPinMode = "manager";
+
+    let pendingInfoWindowTimer = null;
 
     const mapContainer = document.getElementById("map");
     const mapWrapEl = document.getElementById("mapWrap");
@@ -1386,6 +1385,13 @@
       }
     }
 
+    function clearPendingInfoWindowOpen() {
+      if (pendingInfoWindowTimer) {
+        clearTimeout(pendingInfoWindowTimer);
+        pendingInfoWindowTimer = null;
+      }
+    }
+
     function closeOpenedInfowindow() {
       if (openedInfowindow) {
         openedInfowindow.close();
@@ -1394,6 +1400,7 @@
     }
 
     function closeAllInfoWindows() {
+      clearPendingInfoWindowOpen();
       storeMarkers.forEach(store => {
         if (store.infowindow) store.infowindow.close();
       });
@@ -1402,6 +1409,27 @@
 
     function getSelectedStoreData() {
       return storeMarkers.find(store => store.name === selectedStoreName) || null;
+    }
+
+    function clearSelectedStoreState(options = {}) {
+      const { keepRoute = false } = options;
+
+      clearPendingInfoWindowOpen();
+      closeAllInfoWindows();
+      selectedStoreName = null;
+
+      if (!keepRoute) {
+        routeEndStore = null;
+      }
+
+      const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
+      renderStoreList(currentResults.length ? currentResults : storeMarkers);
+      renderDefaultMessage();
+      renderRouteInfo();
+    }
+
+    function handleInfoWindowClose() {
+      clearSelectedStoreState();
     }
 
     function scrollMapIntoView() {
@@ -1464,7 +1492,7 @@
     function createInfoWindowContent(store) {
       return `
         <div class="info-box">
-          <button type="button" class="info-window-close" onclick="closeAllInfoWindows()">×</button>
+          <button type="button" class="info-window-close" onclick="handleInfoWindowClose()">×</button>
           <h3>${escapeHtml(store.name || "")}</h3>
           <div><strong>담당자</strong> <span>${escapeHtml(store.manager || "-")}</span></div>
           <div><strong>운영요일</strong> <span>${escapeHtml(store.operating_days || "-")}</span></div>
@@ -1510,6 +1538,10 @@
       if (!store) return;
 
       const targetStore = storeMarkers.find(item => item.name === store.name) || store;
+      if (!targetStore || !targetStore.coords || !targetStore.marker) return;
+
+      clearPendingInfoWindowOpen();
+
       selectedStoreName = targetStore.name;
       renderSelectedStore(targetStore);
 
@@ -1532,12 +1564,12 @@
         await scrollSidebarToTop();
       }
 
-      setTimeout(() => {
-        moveMapToStore(targetStore);
-        setTimeout(() => {
-          openStoreInfo(targetStore);
-        }, 140);
-      }, 60);
+      moveMapToStore(targetStore);
+
+      pendingInfoWindowTimer = setTimeout(() => {
+        openStoreInfo(targetStore);
+        pendingInfoWindowTimer = null;
+      }, 220);
     }
 
     function setSelectedAsStart() {
@@ -1567,6 +1599,8 @@
     }
 
     function applyFilters() {
+      clearPendingInfoWindowOpen();
+
       if (storeMarkers.length === 0) {
         alert("매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
         return;
@@ -1613,6 +1647,8 @@
     }
 
     function resetFilters() {
+      clearPendingInfoWindowOpen();
+
       document.getElementById("searchInput").value = "";
       document.getElementById("managerFilter").value = "";
       document.getElementById("brandFilter").value = "";
@@ -1752,6 +1788,7 @@
     }
 
     function resetMapData() {
+      clearPendingInfoWindowOpen();
       markersBuildTaskId += 1;
       closeAllInfoWindows();
 
