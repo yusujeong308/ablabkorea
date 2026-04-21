@@ -1365,16 +1365,22 @@
     }
 
     function scrollMapIntoView() {
-      if (!isMobileDevice()) return Promise.resolve();
-
-      return new Promise(resolve => {
-        mapWrapEl.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-        setTimeout(resolve, 320);
+  return new Promise(resolve => {
+    if (isMobileDevice()) {
+      mapWrapEl.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    } else {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
       });
     }
+
+    setTimeout(resolve, 320);
+  });
+}
 
     function getOffsetCenter(latlng, offsetX = 0, offsetY = 0) {
       const projection = map.getProjection();
