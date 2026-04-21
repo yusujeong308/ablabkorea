@@ -357,7 +357,8 @@
 
     .info-box {
       padding: 16px;
-      width: 360px;
+      width: 320px;
+      max-width: calc(100vw - 48px);
       line-height: 1.8;
       font-size: 14px;
       word-break: keep-all;
@@ -533,7 +534,7 @@
       }
 
       .info-box {
-        width: 240px;
+        width: min(240px, calc(100vw - 40px));
         padding: 10px;
         font-size: 12px;
         line-height: 1.6;
@@ -881,38 +882,52 @@
 
     function createModernMarkerContent(color) {
       const wrap = document.createElement("div");
-      wrap.style.width = "22px";
-      wrap.style.height = "22px";
-      wrap.style.borderRadius = "999px";
-      wrap.style.background = color;
-      wrap.style.border = "3px solid #ffffff";
-      wrap.style.boxShadow = "0 4px 12px rgba(0,0,0,0.18)";
       wrap.style.position = "relative";
-      wrap.style.display = "flex";
-      wrap.style.alignItems = "center";
-      wrap.style.justifyContent = "center";
+      wrap.style.width = "26px";
+      wrap.style.height = "34px";
       wrap.style.cursor = "pointer";
+      wrap.style.transform = "translate(-50%, -100%)";
+
+      const body = document.createElement("div");
+      body.style.position = "absolute";
+      body.style.left = "50%";
+      body.style.top = "0";
+      body.style.width = "22px";
+      body.style.height = "22px";
+      body.style.transform = "translateX(-50%)";
+      body.style.borderRadius = "8px";
+      body.style.background = color;
+      body.style.border = "2px solid #ffffff";
+      body.style.boxShadow = "0 6px 16px rgba(0,0,0,0.18)";
+      body.style.display = "flex";
+      body.style.alignItems = "center";
+      body.style.justifyContent = "center";
+      body.style.boxSizing = "border-box";
 
       const inner = document.createElement("div");
-      inner.style.width = "6px";
-      inner.style.height = "6px";
+      inner.style.width = "7px";
+      inner.style.height = "7px";
       inner.style.borderRadius = "999px";
-      inner.style.background = "rgba(255,255,255,0.95)";
+      inner.style.background = "rgba(255,255,255,0.96)";
 
       const tail = document.createElement("div");
       tail.style.position = "absolute";
       tail.style.left = "50%";
-      tail.style.bottom = "-7px";
+      tail.style.bottom = "5px";
       tail.style.width = "10px";
       tail.style.height = "10px";
       tail.style.background = color;
       tail.style.transform = "translateX(-50%) rotate(45deg)";
-      tail.style.borderRight = "3px solid #ffffff";
-      tail.style.borderBottom = "3px solid #ffffff";
+      tail.style.borderRight = "2px solid #ffffff";
+      tail.style.borderBottom = "2px solid #ffffff";
       tail.style.boxSizing = "border-box";
+      tail.style.borderBottomRightRadius = "2px";
 
-      wrap.appendChild(inner);
+      body.appendChild(inner);
+      wrap.appendChild(body);
       wrap.appendChild(tail);
+      wrap.__markerBody = body;
+      wrap.__markerTail = tail;
 
       return wrap;
     }
@@ -1097,9 +1112,12 @@
       storeMarkers.forEach(store => {
         if (store.markerContent) {
           const color = getMarkerColor(store);
-          store.markerContent.style.background = color;
-          const tail = store.markerContent.lastChild;
-          if (tail) tail.style.background = color;
+          if (store.markerContent.__markerBody) {
+            store.markerContent.__markerBody.style.background = color;
+          }
+          if (store.markerContent.__markerTail) {
+            store.markerContent.__markerTail.style.background = color;
+          }
         }
       });
     }
@@ -1254,8 +1272,7 @@
         <h2>${store.name}</h2>
         <div class="row"><span class="label">담당자</span>${store.manager || "-"}</div>
         <div class="row"><span class="label">브랜드</span>${store.brand || "-"}</div>
-        <div class="row"><span class="label">지역</span>${store.region || "-"}</div>
-        <div class="row"><span class="label">주소</span>${store.address || "-"}</div>
+                <div class="row"><span class="label">주소</span>${store.address || "-"}</div>
         <div class="row"><span class="label">상세주소</span>${store.detail_address || "-"}</div>
         <div class="row"><span class="label">운영요일</span>${store.operating_days || "-"}</div>
         <div class="row"><span class="label">운영시간</span>${store.operating_hours || "-"}</div>
@@ -1398,11 +1415,11 @@
 
       if (isMobileDevice()) {
         map.setLevel(4);
-        const movedCenter = getOffsetCenter(store.coords, 120);
-        map.setCenter(movedCenter);
+        map.setCenter(store.coords);
       } else {
         map.setLevel(3);
-        map.setCenter(store.coords);
+        const movedCenter = getOffsetCenter(store.coords, 30);
+        map.setCenter(movedCenter);
       }
     }
 
@@ -1412,8 +1429,7 @@
           <h3>${store.name}</h3>
           <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
           <div><strong>브랜드</strong> <span>${store.brand || "-"}</span></div>
-          <div><strong>지역</strong> <span>${region || "-"}</span></div>
-          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
+                    <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
           <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
           <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
           <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
@@ -1422,46 +1438,59 @@
     }
 
     function openStoreInfo(store) {
-      if (!store || !store.marker) return;
+      if (!store || !store.coords) return;
+
+      const yAnchor = isMobileDevice() ? 1.65 : 1.55;
+      const xAnchor = 0.5;
+      const infoContent = createInfoWindowContent(store);
 
       if (!store.infowindow) {
         store.infowindow = new kakao.maps.InfoWindow({
-          content: createInfoWindowContent(store, store.region),
-          removable: true
+          content: infoContent,
+          removable: true,
+          position: store.coords,
+          xAnchor,
+          yAnchor
         });
       } else {
-        store.infowindow.setContent(createInfoWindowContent(store, store.region));
+        store.infowindow.setContent(infoContent);
+        store.infowindow.setPosition(store.coords);
+        store.infowindow.setOptions({ xAnchor, yAnchor });
       }
 
       closeAllInfoWindows();
-      store.infowindow.open(map, store.marker);
+      store.infowindow.open(map);
       openedInfowindow = store.infowindow;
     }
 
     async function selectStore(store) {
       if (!store) return;
 
-      selectedStoreName = store.name;
-      renderSelectedStore(store);
+      const targetStore = storeMarkers.find(item => item.name === store.name) || store;
+      selectedStoreName = targetStore.name;
+      renderSelectedStore(targetStore);
 
       if (!routeEndStore) {
-        routeEndStore = store;
-        renderRouteInfo();
+        routeEndStore = targetStore;
       }
+      renderRouteInfo();
 
       const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
-      renderStoreList(currentResults);
+      const renderItems = currentResults.some(item => item.name === targetStore.name)
+        ? currentResults
+        : [targetStore, ...currentResults];
+      renderStoreList(renderItems);
 
       closeOpenedInfowindow();
 
       await scrollMapIntoView();
 
       setTimeout(() => {
-        moveMapToStore(store);
+        moveMapToStore(targetStore);
         setTimeout(() => {
-          openStoreInfo(store);
-        }, 120);
-      }, 40);
+          openStoreInfo(targetStore);
+        }, 140);
+      }, 60);
     }
 
     function setSelectedAsStart() {
@@ -1499,32 +1528,41 @@
       renderFilterOptions();
       const current = getCurrentFilterValues();
       const results = getFilteredMarkerStores(current);
+      const selectedStore = getSelectedStoreData();
 
       closeAllInfoWindows();
 
       if (!current.keyword && !current.manager && !current.brand && !current.region && !current.openFilter) {
-        selectedStoreName = null;
         updateMarkers(storeMarkers, false);
         renderStoreList(storeMarkers);
-        renderDefaultMessage();
+
+        if (selectedStore) {
+          renderSelectedStore(selectedStore);
+          openStoreInfo(selectedStore);
+        } else {
+          renderDefaultMessage();
+        }
         return;
       }
 
       if (results.length === 0) {
-        selectedStoreName = null;
         updateMarkers([], false);
         document.getElementById("storeList").innerHTML = "";
+        selectedStoreName = null;
         renderNoResultMessage();
         return;
       }
 
-      if (selectedStoreName && !results.some(store => store.name === selectedStoreName)) {
-        selectedStoreName = null;
-      }
-
       updateMarkers(results, true);
       renderStoreList(results);
-      renderResultMessage(results);
+
+      if (selectedStore && results.some(store => store.name === selectedStore.name)) {
+        renderSelectedStore(selectedStore);
+        openStoreInfo(selectedStore);
+      } else {
+        selectedStoreName = null;
+        renderResultMessage(results);
+      }
     }
 
     function resetFilters() {
