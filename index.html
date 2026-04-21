@@ -378,6 +378,14 @@
       vertical-align: top;
     }
 
+    /* X 버튼 클릭 문제 최소 수정 */
+    .infoBox .close,
+    .wrap_map .infoBox .close {
+      position: relative !important;
+      z-index: 10001 !important;
+      pointer-events: auto !important;
+    }
+
     .roadview-picker-pin {
       width: 26px;
       height: 38px;
@@ -1456,6 +1464,17 @@
       closeAllInfoWindows();
       store.infowindow.open(map, store.marker);
       openedInfowindow = store.infowindow;
+
+      setTimeout(() => {
+        const wrap = mapContainer.closest(".map-wrap") || document;
+        const closeButtons = wrap.querySelectorAll(".infoBox .close, .wrap_map .infoBox .close");
+
+        closeButtons.forEach(btn => {
+          btn.style.position = "relative";
+          btn.style.zIndex = "10001";
+          btn.style.pointerEvents = "auto";
+        });
+      }, 0);
     }
 
     async function selectStore(store) {
