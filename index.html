@@ -457,12 +457,13 @@
     }
 
     .status-top {
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      font-weight: 800;
-      font-size: 16px;
-      line-height: 1.5;
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.45;
+      word-break: keep-all;
     }
 
     .status-open {
@@ -476,8 +477,8 @@
     }
 
     .status-closed {
-      background: #f1f3f5;
-      color: #868e96;
+      background: #ffe3e3;
+      color: #e03131;
     }
 
     .status-empty {
@@ -487,7 +488,7 @@
 
     .status-sub {
       font-size: 15px;
-      font-weight: 800;
+      font-weight: 700;
       margin-top: 0;
     }
 
@@ -1244,9 +1245,7 @@
       const statusClass = getStatusClass(statusInfo.status);
 
       box.innerHTML = `
-        <div class="status-top ${statusClass}">
-          <div class="status-sub">${statusInfo.message}</div>
-        </div>
+        <div class="status-top ${statusClass}">${statusInfo.message}</div>
 
         <h2>${store.name}</h2>
         <div class="row"><span class="label">담당자</span>${store.manager || "-"}</div>
@@ -1397,7 +1396,7 @@
         map.setCenter(movedCenter);
       } else {
         map.setLevel(3);
-        const movedCenter = getOffsetCenter(store.coords, 50, 90);
+        const movedCenter = getOffsetCenter(store.coords, 170, 90);
         map.setCenter(movedCenter);
       }
     }
