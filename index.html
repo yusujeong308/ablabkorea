@@ -1426,12 +1426,11 @@
 
       if (!store.infowindow) {
         store.infowindow = new kakao.maps.InfoWindow({
-          content: infoContent,
-          removable: true,
-          position: store.coords,
-          xAnchor,
-          yAnchor
-        });
+  content: createInfoWindowContent(store),
+  removable: true,
+  xAnchor: 0.5,
+  yAnchor: 1.6
+});
       } else {
         store.infowindow.setContent(infoContent);
         store.infowindow.setPosition(store.coords);
