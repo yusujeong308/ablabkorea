@@ -388,7 +388,7 @@
       right: 20px;
       bottom: 20px;
       z-index: 20;
-      width: 210px;
+      width: 168px;
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 12px;
@@ -444,14 +444,6 @@
       flex-shrink: 0;
     }
 
-    .marker-green { background: #2f9e44; }
-    .marker-yellow { background: #f08c00; }
-    .marker-red { background: #e03131; }
-    .marker-blue { background: #1c7ed6; }
-    .marker-gray { background: #ced4da; }
-    .marker-purple { background: #7950f2; }
-    .marker-brown { background: #8b5e3c; }
-    .marker-pink { background: #e64980; }
 
     .marker-legend-toggle {
       position: absolute;
@@ -818,11 +810,19 @@
     const roadviewClient = new kakao.maps.RoadviewClient();
 
     const managerMarkerColors = {
-      "김세연": "blue",
-      "김광태": "pink",
-      "최낙현": "yellow",
-      "이승우": "red",
-      "센터": "green"
+      "김세연": "#4c6ef5",
+      "김광태": "#f06595",
+      "최낙현": "#f59f00",
+      "이승우": "#fa5252",
+      "센터": "#20c997",
+      "기본": "#845ef7"
+    };
+
+    const statusMarkerColors = {
+      "운영중": "#2f9e44",
+      "브레이크타임": "#f08c00",
+      "미운영": "#868e96",
+      "정보없음": "#8b5e3c"
     };
 
     function normalizeText(text) {
@@ -863,12 +863,58 @@
       }));
     }
 
-    function getMarkerImageByManager(manager) {
-      const color = managerMarkerColors[manager] || "purple";
-      const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
-      const imageSize = new kakao.maps.Size(32, 32);
-      const imageOption = { offset: new kakao.maps.Point(16, 32) };
-      return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+    function getManagerColor(manager) {
+      return managerMarkerColors[String(manager || "").trim()] || managerMarkerColors["기본"];
+    }
+
+    function getStatusColor(store) {
+      const status = getStoreStatus(store).status;
+      return statusMarkerColors[status] || managerMarkerColors["기본"];
+    }
+
+    function getMarkerColor(store) {
+      if (currentPinMode === "open") {
+        return getStatusColor(store);
+      }
+      return getManagerColor(store.manager);
+    }
+
+    function createModernMarkerContent(color) {
+      const wrap = document.createElement("div");
+      wrap.style.width = "22px";
+      wrap.style.height = "22px";
+      wrap.style.borderRadius = "999px";
+      wrap.style.background = color;
+      wrap.style.border = "3px solid #ffffff";
+      wrap.style.boxShadow = "0 4px 12px rgba(0,0,0,0.18)";
+      wrap.style.position = "relative";
+      wrap.style.display = "flex";
+      wrap.style.alignItems = "center";
+      wrap.style.justifyContent = "center";
+      wrap.style.cursor = "pointer";
+
+      const inner = document.createElement("div");
+      inner.style.width = "6px";
+      inner.style.height = "6px";
+      inner.style.borderRadius = "999px";
+      inner.style.background = "rgba(255,255,255,0.95)";
+
+      const tail = document.createElement("div");
+      tail.style.position = "absolute";
+      tail.style.left = "50%";
+      tail.style.bottom = "-7px";
+      tail.style.width = "10px";
+      tail.style.height = "10px";
+      tail.style.background = color;
+      tail.style.transform = "translateX(-50%) rotate(45deg)";
+      tail.style.borderRight = "3px solid #ffffff";
+      tail.style.borderBottom = "3px solid #ffffff";
+      tail.style.boxSizing = "border-box";
+
+      wrap.appendChild(inner);
+      wrap.appendChild(tail);
+
+      return wrap;
     }
 
     function parseTimeRange(text) {
@@ -971,31 +1017,6 @@
       };
     }
 
-    function getOpenStatusMarkerColorName(store) {
-      const statusInfo = getStoreStatus(store);
-      if (statusInfo.status === "운영중") return "green";
-      if (statusInfo.status === "브레이크타임") return "yellow";
-      if (statusInfo.status === "미운영") return "gray";
-      return "purple";
-    }
-
-    function getMarkerImage(store) {
-      if (currentPinMode === "open") {
-        return getMarkerImageByManager(
-          {
-            green: "센터",
-            yellow: "최낙현",
-            gray: "__gray__",
-            purple: "__purple__"
-          }[getOpenStatusMarkerColorName(store)]
-        );
-      }
-      return getMarkerImageByManager(store.manager);
-    }
-
-    function getMarkerIconUrlByColorName(color) {
-      return `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
-    }
 
     function getExistingManagersInData() {
       return createUniqueOptions(
@@ -1014,55 +1035,44 @@
         titleEl.textContent = "운영상태 핀 안내";
         listEl.innerHTML = `
           <div class="marker-legend-item">
-            <img src="${getMarkerIconUrlByColorName("green")}" alt="운영중">
+            <span class="marker-dot" style="background:${statusMarkerColors["운영중"]}"></span>
             <span>운영중</span>
           </div>
           <div class="marker-legend-item">
-            <img src="${getMarkerIconUrlByColorName("yellow")}" alt="브레이크타임">
+            <span class="marker-dot" style="background:${statusMarkerColors["브레이크타임"]}"></span>
             <span>브레이크타임</span>
           </div>
           <div class="marker-legend-item">
-            <img src="${getMarkerIconUrlByColorName("purple")}" alt="운영정보 없음">
-            <span>운영정보 없음</span>
+            <span class="marker-dot" style="background:${statusMarkerColors["미운영"]}"></span>
+            <span>운영종료</span>
           </div>
           <div class="marker-legend-item">
-            <img src="${getMarkerIconUrlByColorName("gray")}" alt="운영종료">
-            <span>운영종료</span>
+            <span class="marker-dot" style="background:${statusMarkerColors["정보없음"]}"></span>
+            <span>운영정보 없음</span>
           </div>
         `;
         return;
       }
 
       const managers = getExistingManagersInData();
-      const colorMap = {
-        "김세연": "blue",
-        "김광태": "pink",
-        "최낙현": "yellow",
-        "이승우": "red",
-        "센터": "green"
-      };
-
       titleEl.textContent = "담당자 핀 안내";
 
       if (!managers.length) {
         listEl.innerHTML = `
           <div class="marker-legend-item">
-            <span class="marker-dot marker-gray"></span>
+            <span class="marker-dot" style="background:${managerMarkerColors["기본"]}"></span>
             <span>표시할 담당자 없음</span>
           </div>
         `;
         return;
       }
 
-      listEl.innerHTML = managers.map(manager => {
-        const color = colorMap[manager] || "purple";
-        return `
-          <div class="marker-legend-item">
-            <img src="${getMarkerIconUrlByColorName(color)}" alt="${manager}">
-            <span>${manager}</span>
-          </div>
-        `;
-      }).join("");
+      listEl.innerHTML = managers.map(manager => `
+        <div class="marker-legend-item">
+          <span class="marker-dot" style="background:${getManagerColor(manager)}"></span>
+          <span>${manager}</span>
+        </div>
+      `).join("");
     }
 
     function toggleMarkerLegend() {
@@ -1085,11 +1095,11 @@
 
     function refreshMarkerImages() {
       storeMarkers.forEach(store => {
-        if (store.marker) {
-          const isVisible = !!store.marker.getMap();
-          store.marker.setMap(null);
-          store.marker.setImage(getMarkerImage(store));
-          store.marker.setMap(isVisible ? map : null);
+        if (store.markerContent) {
+          const color = getMarkerColor(store);
+          store.markerContent.style.background = color;
+          const tail = store.markerContent.lastChild;
+          if (tail) tail.style.background = color;
         }
       });
     }
@@ -1281,9 +1291,22 @@
       const list = document.getElementById("storeList");
       list.innerHTML = "";
 
-      const sortedItems = [...items].sort((a, b) =>
-        String(a.name || "").localeCompare(String(b.name || ""), "ko")
-      );
+      const statusOrder = {
+        "운영중": 1,
+        "브레이크타임": 2,
+        "미운영": 3,
+        "정보없음": 4
+      };
+
+      const sortedItems = [...items].sort((a, b) => {
+        const statusA = getStoreStatus(a).status;
+        const statusB = getStoreStatus(b).status;
+        const orderA = statusOrder[statusA] || 999;
+        const orderB = statusOrder[statusB] || 999;
+
+        if (orderA !== orderB) return orderA - orderB;
+        return String(a.name || "").localeCompare(String(b.name || ""), "ko");
+      });
 
       const fragment = document.createDocumentFragment();
 
@@ -1320,7 +1343,7 @@
 
       storeMarkers.forEach(store => {
         const visible = results.includes(store);
-        store.marker.setMap(visible ? map : null);
+        if (store.marker) store.marker.setMap(visible ? map : null);
         if (visible) bounds.extend(store.coords);
       });
 
@@ -1676,10 +1699,12 @@
 
     function buildStoreMarker(store, coords) {
       const region = extractRegion(store.address);
+      const markerContent = createModernMarkerContent(getMarkerColor(store));
 
-      const marker = new kakao.maps.Marker({
+      const marker = new kakao.maps.CustomOverlay({
         position: coords,
-        image: getMarkerImage(store)
+        content: markerContent,
+        yAnchor: 1
       });
 
       marker.setMap(map);
@@ -1689,10 +1714,11 @@
         region,
         coords,
         marker,
+        markerContent,
         infowindow: null
       };
 
-      kakao.maps.event.addListener(marker, "click", function() {
+      markerContent.addEventListener("click", function() {
         selectStore(storeData);
       });
 
