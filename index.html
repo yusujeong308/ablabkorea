@@ -358,6 +358,7 @@
 
     .info-box {
       padding: 16px;
+      padding-right: 42px;
       width: 300px;
       max-width: calc(100vw - 48px);
       line-height: 1.8;
@@ -379,21 +380,25 @@
       vertical-align: top;
     }
 
-    /* 상세 정보란 X 버튼 클릭 안정화 */
-    .infoBox,
-    .wrap_map .infoBox {
-      pointer-events: auto !important;
-      z-index: 10000 !important;
+    .info-window-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      color: #666;
+      font-size: 18px;
+      line-height: 24px;
+      text-align: center;
+      cursor: pointer;
+      padding: 0;
+      font-family: Arial, sans-serif;
     }
 
-    .infoBox .close,
-    .wrap_map .infoBox .close {
-      position: absolute !important;
-      top: 10px !important;
-      right: 10px !important;
-      z-index: 10001 !important;
-      pointer-events: auto !important;
-      cursor: pointer !important;
+    .info-window-close:hover {
+      color: #111;
     }
 
     .roadview-picker-pin {
@@ -557,6 +562,7 @@
       .info-box {
         width: min(230px, calc(100vw - 36px));
         padding: 10px;
+        padding-right: 34px;
         font-size: 12px;
         line-height: 1.6;
       }
@@ -567,6 +573,15 @@
       }
 
       .info-box strong { width: 54px; }
+
+      .info-window-close {
+        top: 8px;
+        right: 8px;
+        width: 22px;
+        height: 22px;
+        font-size: 16px;
+        line-height: 22px;
+      }
 
       .search-box {
         display: grid;
@@ -646,12 +661,15 @@
 
       .selected-store .label { width: 60px; }
 
+      /* 모바일에서도 웹처럼:
+         담당자/브랜드는 한 줄씩,
+         전체 지역/운영 여부는 가로 2칸 */
       .filter-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
       }
 
       .filter-full {
-        grid-column: auto;
+        grid-column: 1 / -1;
       }
 
       .marker-legend {
@@ -679,6 +697,7 @@
         margin-bottom: 6px;
       }
 
+      /* 모바일 지도 거리 표시를 왼쪽 위로 이동 */
       .wrap_map .scale,
       #map .scale,
       .scale {
@@ -686,6 +705,7 @@
         right: auto !important;
         top: 12px !important;
         bottom: auto !important;
+        z-index: 15 !important;
       }
     }
   </style>
@@ -1432,17 +1452,27 @@
       }
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function createInfoWindowContent(store) {
       return `
         <div class="info-box">
-          <h3>${store.name}</h3>
-          <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
-          <div><strong>운영요일</strong> <span>${store.operating_days || "-"}</span></div>
-          <div><strong>운영시간</strong> <span>${store.operating_hours || "-"}</span></div>
-          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
-          <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
-          <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
-          <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
+          <button type="button" class="info-window-close" onclick="closeAllInfoWindows()">×</button>
+          <h3>${escapeHtml(store.name || "")}</h3>
+          <div><strong>담당자</strong> <span>${escapeHtml(store.manager || "-")}</span></div>
+          <div><strong>운영요일</strong> <span>${escapeHtml(store.operating_days || "-")}</span></div>
+          <div><strong>운영시간</strong> <span>${escapeHtml(store.operating_hours || "-")}</span></div>
+          <div><strong>주소</strong> <span>${escapeHtml(store.address || "-")}</span></div>
+          <div><strong>상세주소</strong> <span>${escapeHtml(store.detail_address || "-")}</span></div>
+          <div><strong>전화</strong> <span>${escapeHtml(store.phone || "-")}</span></div>
+          <div><strong>비고</strong> <span>${escapeHtml(store.note || "-")}</span></div>
         </div>
       `;
     }
@@ -1457,7 +1487,7 @@
       if (!store.infowindow) {
         store.infowindow = new kakao.maps.InfoWindow({
           content: infoContent,
-          removable: true,
+          removable: false,
           xAnchor,
           yAnchor,
           zIndex: 1000
@@ -1474,20 +1504,6 @@
       closeAllInfoWindows();
       store.infowindow.open(map, store.marker);
       openedInfowindow = store.infowindow;
-
-      setTimeout(() => {
-        const wrap = mapContainer.closest(".map-wrap") || document;
-        const closeButtons = wrap.querySelectorAll(".infoBox .close, .wrap_map .infoBox .close");
-
-        closeButtons.forEach(btn => {
-          btn.style.position = "absolute";
-          btn.style.top = "10px";
-          btn.style.right = "10px";
-          btn.style.zIndex = "10001";
-          btn.style.pointerEvents = "auto";
-          btn.style.cursor = "pointer";
-        });
-      }, 0);
     }
 
     async function selectStore(store) {
