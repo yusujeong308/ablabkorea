@@ -365,6 +365,7 @@
       word-break: keep-all;
       position: relative;
       z-index: 30;
+      pointer-events: auto;
     }
 
     .info-box h3 {
@@ -378,28 +379,23 @@
       vertical-align: top;
     }
 
-   /* 인포윈도우 닫기 X 버튼 클릭 가능하게 수정 */
-.infoBox,
-.wrap_map .infoBox {
-  pointer-events: auto !important;
-  z-index: 10000 !important;
-}
+    /* 상세 정보란 X 버튼 클릭 안정화 */
+    .infoBox,
+    .wrap_map .infoBox {
+      pointer-events: auto !important;
+      z-index: 10000 !important;
+    }
 
-.infoBox .close,
-.wrap_map .infoBox .close {
-  position: absolute !important;
-  top: 10px !important;
-  right: 10px !important;
-  z-index: 10001 !important;
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
+    .infoBox .close,
+    .wrap_map .infoBox .close {
+      position: absolute !important;
+      top: 10px !important;
+      right: 10px !important;
+      z-index: 10001 !important;
+      pointer-events: auto !important;
+      cursor: pointer !important;
+    }
 
-.info-box {
-  position: relative;
-  z-index: 1;
-  pointer-events: auto;
-}
     .roadview-picker-pin {
       width: 26px;
       height: 38px;
@@ -1479,15 +1475,9 @@
       store.infowindow.open(map, store.marker);
       openedInfowindow = store.infowindow;
 
-            setTimeout(() => {
+      setTimeout(() => {
         const wrap = mapContainer.closest(".map-wrap") || document;
-        const infoBoxes = wrap.querySelectorAll(".infoBox, .wrap_map .infoBox");
         const closeButtons = wrap.querySelectorAll(".infoBox .close, .wrap_map .infoBox .close");
-
-        infoBoxes.forEach(box => {
-          box.style.pointerEvents = "auto";
-          box.style.zIndex = "10000";
-        });
 
         closeButtons.forEach(btn => {
           btn.style.position = "absolute";
@@ -1496,14 +1486,9 @@
           btn.style.zIndex = "10001";
           btn.style.pointerEvents = "auto";
           btn.style.cursor = "pointer";
-
-          btn.onclick = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            closeAllInfoWindows();
-          };
         });
-      }, 30);
+      }, 0);
+    }
 
     async function selectStore(store) {
       if (!store) return;
