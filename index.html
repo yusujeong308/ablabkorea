@@ -162,6 +162,7 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      scroll-behavior: smooth;
     }
 
     .selected-store {
@@ -362,6 +363,8 @@
       line-height: 1.8;
       font-size: 14px;
       word-break: keep-all;
+      position: relative;
+      z-index: 30;
     }
 
     .info-box h3 {
@@ -808,6 +811,7 @@
     const mapContainer = document.getElementById("map");
     const mapWrapEl = document.getElementById("mapWrap");
     const sidebarEl = document.getElementById("sidebar");
+    const sidebarScrollEl = document.getElementById("sidebarScroll");
 
     const map = new kakao.maps.Map(mapContainer, {
       center: new kakao.maps.LatLng(36.5, 127.8),
@@ -1365,22 +1369,28 @@
     }
 
     function scrollMapIntoView() {
-  return new Promise(resolve => {
-    if (isMobileDevice()) {
-      mapWrapEl.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    } else {
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth"
+      if (!isMobileDevice()) return Promise.resolve();
+
+      return new Promise(resolve => {
+        mapWrapEl.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+        setTimeout(resolve, 320);
       });
     }
 
-    setTimeout(resolve, 320);
-  });
-}
+    function scrollSidebarToTop() {
+      if (isMobileDevice() || !sidebarScrollEl) return Promise.resolve();
+
+      return new Promise(resolve => {
+        sidebarScrollEl.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+        setTimeout(resolve, 320);
+      });
+    }
 
     function getOffsetCenter(latlng, offsetX = 0, offsetY = 0) {
       const projection = map.getProjection();
@@ -1434,12 +1444,16 @@
           content: infoContent,
           removable: true,
           xAnchor,
-          yAnchor
-          zIndex: 9999
+          yAnchor,
+          zIndex: 1000
         });
       } else {
         store.infowindow.setContent(infoContent);
-        store.infowindow.setOptions({ xAnchor, yAnchor });
+        store.infowindow.setOptions({ xAnchor, yAnchor, zIndex: 1000 });
+      }
+
+      if (typeof store.infowindow.setZIndex === "function") {
+        store.infowindow.setZIndex(1000);
       }
 
       closeAllInfoWindows();
@@ -1467,7 +1481,11 @@
 
       closeOpenedInfowindow();
 
-      await scrollMapIntoView();
+      if (isMobileDevice()) {
+        await scrollMapIntoView();
+      } else {
+        await scrollSidebarToTop();
+      }
 
       setTimeout(() => {
         moveMapToStore(targetStore);
