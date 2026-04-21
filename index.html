@@ -72,7 +72,9 @@
     .route-actions button,
     .selected-actions button,
     .roadview-header button,
-    .roadview-toolbar button {
+    .roadview-toolbar button,
+    .marker-legend-close,
+    .marker-legend-toggle {
       padding: 10px 14px;
       font-size: 14px;
       border: none;
@@ -272,7 +274,7 @@
     .top-buttons {
       position: absolute;
       top: 20px;
-      right: 50px;
+      right: 45px;
       display: flex;
       gap: 12px;
       z-index: 20;
@@ -292,10 +294,7 @@
       white-space: nowrap;
     }
 
-    .roadview-pick-btn.active {
-      background: #0b63ce;
-    }
-
+    .roadview-pick-btn.active,
     .pin-mode-btn.active {
       background: #0b63ce;
     }
@@ -356,60 +355,6 @@
       height: calc(100% - 44px);
     }
 
-    .legend-toggle {
-      position: absolute;
-      right: 20px;
-      bottom: 20px;
-      z-index: 20;
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 999px;
-      background: #222;
-      color: #fff;
-      font-size: 14px;
-      cursor: pointer;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-    }
-
-    .map-legend {
-      position: absolute;
-      right: 64px;
-      bottom: 20px;
-      background: rgba(255, 255, 255, 0.96);
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 13px;
-      line-height: 1.8;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-      z-index: 10;
-      min-width: 160px;
-      transition: opacity 0.25s ease, transform 0.25s ease;
-    }
-
-    .map-legend.collapsed {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(10px);
-    }
-
-    .map-legend-title {
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .map-legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .map-legend-item img {
-      width: 18px;
-      height: 18px;
-    }
-
     .info-box {
       padding: 16px;
       width: 360px;
@@ -438,6 +383,86 @@
       pointer-events: none;
     }
 
+    .marker-legend {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 20;
+      width: 210px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      overflow: hidden;
+    }
+
+    .marker-legend.hidden {
+      display: none;
+    }
+
+    .marker-legend-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .marker-legend-close {
+      background: #e9ecef;
+      color: #222;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .marker-legend-list {
+      padding: 10px 12px;
+    }
+
+    .marker-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .marker-legend-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .marker-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+    }
+
+    .marker-green { background: #2f9e44; }
+    .marker-yellow { background: #f08c00; }
+    .marker-red { background: #e03131; }
+    .marker-blue { background: #1c7ed6; }
+    .marker-gray { background: #ced4da; }
+    .marker-purple { background: #7950f2; }
+    .marker-brown { background: #8b5e3c; }
+    .marker-pink { background: #e64980; }
+
+    .marker-legend-toggle {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 20;
+      font-size: 13px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    }
+
     .status-top {
       padding: 12px;
       border-radius: 10px;
@@ -453,18 +478,18 @@
     }
 
     .status-break {
-      background: #f7efe7;
-      color: #8b5e3c;
+      background: #fff4e6;
+      color: #f08c00;
     }
 
     .status-closed {
-      background: #fff5f5;
-      color: #e03131;
+      background: #f1f3f5;
+      color: #868e96;
     }
 
     .status-empty {
-      background: #f1f3f5;
-      color: #868e96;
+      background: #f8f0e8;
+      color: #8b5e3c;
     }
 
     .status-sub {
@@ -537,24 +562,45 @@
 
       .selected-store { min-height: auto; }
 
-      .sidebar-toggle {
+      .top-buttons {
+        position: absolute;
         top: 12px;
         left: 12px;
-        padding: 8px 10px;
-        font-size: 12px;
-        min-width: 70px;
-      }
-
-      .top-buttons {
-        top: 12px;
-        right: 50px;
+        right: auto;
+        bottom: auto;
+        display: flex;
+        flex-direction: column;
         gap: 6px;
+        z-index: 20;
       }
 
       .top-buttons button {
+        padding: 7px 9px;
+        font-size: 11px;
+        min-width: 72px;
+        width: 72px;
+      }
+
+      .marker-legend-toggle {
+        position: absolute;
+        right: 12px;
+        bottom: 56px;
         padding: 8px 10px;
         font-size: 12px;
-        min-width: 70px;
+        z-index: 20;
+      }
+
+      .sidebar-toggle {
+        position: absolute;
+        top: auto;
+        left: auto;
+        right: 12px;
+        bottom: 12px;
+        padding: 7px 9px;
+        font-size: 11px;
+        min-width: 72px;
+        width: 72px;
+        z-index: 21;
       }
 
       .roadview-wrap {
@@ -571,22 +617,6 @@
         right: 12px;
         width: auto;
         height: calc(100% - 68px);
-      }
-
-      .legend-toggle {
-        right: 12px;
-        bottom: 12px;
-        width: 32px;
-        height: 32px;
-        font-size: 12px;
-      }
-
-      .map-legend {
-        right: 52px;
-        bottom: 12px;
-        font-size: 12px;
-        min-width: 140px;
-        padding: 10px 12px;
       }
 
       .store-item-title { font-size: 14px; }
@@ -608,6 +638,31 @@
 
       .filter-full {
         grid-column: auto;
+      }
+
+      .marker-legend {
+        right: 12px;
+        bottom: 100px;
+        width: 180px;
+      }
+
+      .marker-legend-header {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .marker-legend-close {
+        padding: 5px 8px;
+        font-size: 11px;
+      }
+
+      .marker-legend-list {
+        padding: 8px 10px;
+      }
+
+      .marker-legend-item {
+        font-size: 12px;
+        margin-bottom: 6px;
       }
     }
   </style>
@@ -686,6 +741,23 @@
         <button type="button" id="pinModeToggle" class="pin-mode-btn" onclick="togglePinMode()">운영상태</button>
       </div>
 
+      <div id="markerLegend" class="marker-legend hidden">
+        <div class="marker-legend-header">
+          <span id="markerLegendTitle">핀 색상 안내</span>
+          <button type="button" class="marker-legend-close" onclick="toggleMarkerLegend()">닫기</button>
+        </div>
+        <div class="marker-legend-list" id="markerLegendList"></div>
+      </div>
+
+      <button
+        type="button"
+        id="markerLegendToggle"
+        class="marker-legend-toggle"
+        onclick="toggleMarkerLegend()"
+      >
+        핀
+      </button>
+
       <div id="map"></div>
 
       <div id="roadviewWrap" class="roadview-wrap">
@@ -698,9 +770,6 @@
         </div>
         <div id="roadview"></div>
       </div>
-
-      <button id="legendToggle" class="legend-toggle" onclick="toggleLegend()">▶</button>
-      <div class="map-legend collapsed" id="mapLegend"></div>
     </div>
   </div>
 
@@ -748,14 +817,6 @@
     const roadview = new kakao.maps.Roadview(document.getElementById("roadview"));
     const roadviewClient = new kakao.maps.RoadviewClient();
 
-    const managerMarkerColors = {
-      "김세연": "blue",
-      "김광태": "pink",
-      "최낙현": "yellow",
-      "이승우": "red",
-      "센터": "green"
-    };
-
     function normalizeText(text) {
       return String(text || "").toLowerCase().replace(/\s+/g, "").trim();
     }
@@ -794,14 +855,7 @@
       }));
     }
 
-    function getMarkerImageByManager(manager) {
-      const color = managerMarkerColors[manager] || "purple";
-      const imageSrc = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
-      const imageSize = new kakao.maps.Size(32, 32);
-      const imageOption = { offset: new kakao.maps.Point(16, 32) };
-      return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-    }
-
+    // 처음 1번 파일의 물방울 핀 모양
     function createMarkerSvg(color) {
       return `
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="35" viewBox="0 0 32 35">
@@ -824,15 +878,17 @@
       );
     }
 
+    // 담당자 핀 색도 물방울 핀 기준으로 사용
     function getManagerPinColor(manager) {
-      const colorMap = {
-        "김세연": "#1c7ed6",
-        "김광태": "#e64980",
-        "최낙현": "#f08c00",
-        "이승우": "#e03131",
-        "센터": "#2f9e44"
-      };
-      return colorMap[manager] || "#7950f2";
+      const value = String(manager || "").trim();
+
+      if (value === "센터") return "#2f9e44";
+      if (value === "최낙현") return "#f08c00";
+      if (value === "이승우") return "#e03131";
+      if (value === "김세연") return "#1c7ed6";
+      if (value === "김광태") return "#e64980";
+
+      return "#7950f2";
     }
 
     function parseTimeRange(text) {
@@ -935,13 +991,14 @@
       };
     }
 
+    // 처음 1번 파일의 운영상태 핀 색상 그대로
     function getOpenStatusPinColor(store) {
       const statusInfo = getStoreStatus(store);
 
       if (statusInfo.status === "운영중") return "#2f9e44";
-      if (statusInfo.status === "브레이크타임") return "#c8a27a";
-      if (statusInfo.status === "미운영") return "#e03131";
-      return "#868e96";
+      if (statusInfo.status === "브레이크타임") return "#f08c00";
+      if (statusInfo.status === "미운영") return "#ced4da";
+      return "#8b5e3c";
     }
 
     function getMarkerImage(store) {
@@ -949,6 +1006,80 @@
         return makeMarkerImage(getOpenStatusPinColor(store));
       }
       return makeMarkerImage(getManagerPinColor(store.manager));
+    }
+
+    function renderMarkerLegend() {
+      const titleEl = document.getElementById("markerLegendTitle");
+      const listEl = document.getElementById("markerLegendList");
+      if (!titleEl || !listEl) return;
+
+      if (currentPinMode === "open") {
+        titleEl.textContent = "운영상태 핀 안내";
+        listEl.innerHTML = `
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-green"></span>
+            <span>운영중</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-yellow"></span>
+            <span>브레이크타임</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-gray"></span>
+            <span>운영종료</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-brown"></span>
+            <span>운영정보 없음</span>
+          </div>
+        `;
+      } else {
+        titleEl.textContent = "담당자 핀 안내";
+        listEl.innerHTML = `
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-blue"></span>
+            <span>김세연</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-pink"></span>
+            <span>김광태</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-yellow"></span>
+            <span>최낙현</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-red"></span>
+            <span>이승우</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-green"></span>
+            <span>센터</span>
+          </div>
+          <div class="marker-legend-item">
+            <span class="marker-dot marker-purple"></span>
+            <span>기타</span>
+          </div>
+        `;
+      }
+    }
+
+    function toggleMarkerLegend() {
+      const legend = document.getElementById("markerLegend");
+      const toggleBtn = document.getElementById("markerLegendToggle");
+
+      if (!legend || !toggleBtn) return;
+
+      const isHidden = legend.classList.contains("hidden");
+
+      if (isHidden) {
+        renderMarkerLegend();
+        legend.classList.remove("hidden");
+        toggleBtn.style.display = "none";
+      } else {
+        legend.classList.add("hidden");
+        toggleBtn.style.display = "block";
+      }
     }
 
     function refreshMarkerImages() {
@@ -975,6 +1106,7 @@
         button.classList.remove("active");
       }
 
+      renderMarkerLegend();
       refreshMarkerImages();
 
       const selected = getSelectedStoreData();
@@ -1082,32 +1214,6 @@
       if (regions.includes(current.region)) regionFilter.value = current.region;
 
       openFilter.value = current.openFilter;
-    }
-
-    function renderLegend() {
-      const legend = document.getElementById("mapLegend");
-      const managers = createUniqueOptions(stores.map(store => store.manager));
-
-      let html = '<div class="map-legend-title">담당자 핀 색상</div>';
-      managers.forEach(manager => {
-        const color = managerMarkerColors[manager] || "purple";
-        const icon = `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
-        html += `
-          <div class="map-legend-item">
-            <img src="${icon}" alt="${manager}">
-            <span>${manager}</span>
-          </div>
-        `;
-      });
-
-      legend.innerHTML = html;
-    }
-
-    function toggleLegend() {
-      const legend = document.getElementById("mapLegend");
-      const toggle = document.getElementById("legendToggle");
-      legend.classList.toggle("collapsed");
-      toggle.textContent = legend.classList.contains("collapsed") ? "▶" : "◀";
     }
 
     function renderRouteInfo() {
@@ -1629,10 +1735,10 @@
     function initializeStores() {
       resetMapData();
       rebuildStoresForFilter();
+      renderMarkerLegend();
 
       if (!stores.length) {
         renderFilterOptions();
-        renderLegend();
         renderRouteInfo();
         renderStoreList([]);
         renderNoResultMessage();
@@ -1640,7 +1746,6 @@
       }
 
       renderFilterOptions();
-      renderLegend();
       renderRouteInfo();
       renderStoreList(storesForFilter);
       renderDefaultMessage();
