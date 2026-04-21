@@ -880,56 +880,31 @@
       return getManagerColor(store.manager);
     }
 
-    function createModernMarkerContent(color) {
-      const wrap = document.createElement("div");
-      wrap.style.position = "relative";
-      wrap.style.width = "26px";
-      wrap.style.height = "34px";
-      wrap.style.cursor = "pointer";
-      wrap.style.transform = "translate(-50%, -100%)";
+    function createClassicPinSvg(color) {
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40" fill="none">
+          <path d="M14 1.5C7.096 1.5 1.5 7.096 1.5 14c0 9.646 10.404 20.182 11.818 21.57a1 1 0 0 0 1.364 0C16.096 34.182 26.5 23.646 26.5 14 26.5 7.096 20.904 1.5 14 1.5Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+          <circle cx="14" cy="14" r="5.2" fill="#FFFFFF" fill-opacity="0.96"/>
+        </svg>
+      `.trim();
+    }
 
-      const body = document.createElement("div");
-      body.style.position = "absolute";
-      body.style.left = "50%";
-      body.style.top = "0";
-      body.style.width = "22px";
-      body.style.height = "22px";
-      body.style.transform = "translateX(-50%)";
-      body.style.borderRadius = "8px";
-      body.style.background = color;
-      body.style.border = "2px solid #ffffff";
-      body.style.boxShadow = "0 6px 16px rgba(0,0,0,0.18)";
-      body.style.display = "flex";
-      body.style.alignItems = "center";
-      body.style.justifyContent = "center";
-      body.style.boxSizing = "border-box";
+    function createMarkerImage(color) {
+      const svg = createClassicPinSvg(color);
+      const imageSrc = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+      const imageSize = new kakao.maps.Size(28, 40);
+      const imageOption = { offset: new kakao.maps.Point(14, 40) };
+      return new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+    }
 
-      const inner = document.createElement("div");
-      inner.style.width = "7px";
-      inner.style.height = "7px";
-      inner.style.borderRadius = "999px";
-      inner.style.background = "rgba(255,255,255,0.96)";
-
-      const tail = document.createElement("div");
-      tail.style.position = "absolute";
-      tail.style.left = "50%";
-      tail.style.bottom = "5px";
-      tail.style.width = "10px";
-      tail.style.height = "10px";
-      tail.style.background = color;
-      tail.style.transform = "translateX(-50%) rotate(45deg)";
-      tail.style.borderRight = "2px solid #ffffff";
-      tail.style.borderBottom = "2px solid #ffffff";
-      tail.style.boxSizing = "border-box";
-      tail.style.borderBottomRightRadius = "2px";
-
-      body.appendChild(inner);
-      wrap.appendChild(body);
-      wrap.appendChild(tail);
-      wrap.__markerBody = body;
-      wrap.__markerTail = tail;
-
-      return wrap;
+    function getMarkerZIndex(store) {
+      if (currentPinMode !== "open") return 10;
+      const status = getStoreStatus(store).status;
+      if (status === "운영중") return 400;
+      if (status === "브레이크타임") return 300;
+      if (status === "미운영") return 200;
+      if (status === "정보없음") return 100;
+      return 10;
     }
 
     function parseTimeRange(text) {
@@ -1110,14 +1085,9 @@
 
     function refreshMarkerImages() {
       storeMarkers.forEach(store => {
-        if (store.markerContent) {
-          const color = getMarkerColor(store);
-          if (store.markerContent.__markerBody) {
-            store.markerContent.__markerBody.style.background = color;
-          }
-          if (store.markerContent.__markerTail) {
-            store.markerContent.__markerTail.style.background = color;
-          }
+        if (store.marker) {
+          store.marker.setImage(createMarkerImage(getMarkerColor(store)));
+          store.marker.setZIndex(getMarkerZIndex(store));
         }
       });
     }
@@ -1271,11 +1241,10 @@
 
         <h2>${store.name}</h2>
         <div class="row"><span class="label">담당자</span>${store.manager || "-"}</div>
-        <div class="row"><span class="label">브랜드</span>${store.brand || "-"}</div>
-                <div class="row"><span class="label">주소</span>${store.address || "-"}</div>
-        <div class="row"><span class="label">상세주소</span>${store.detail_address || "-"}</div>
         <div class="row"><span class="label">운영요일</span>${store.operating_days || "-"}</div>
         <div class="row"><span class="label">운영시간</span>${store.operating_hours || "-"}</div>
+        <div class="row"><span class="label">주소</span>${store.address || "-"}</div>
+        <div class="row"><span class="label">상세주소</span>${store.detail_address || "-"}</div>
         <div class="row"><span class="label">브레이크</span>${store.break_time || "-"}</div>
         <div class="row"><span class="label">전화</span>${store.phone || "-"}</div>
         <div class="row"><span class="label">비고</span>${store.note || "-"}</div>
@@ -1423,13 +1392,14 @@
       }
     }
 
-    function createInfoWindowContent(store, region) {
+    function createInfoWindowContent(store) {
       return `
         <div class="info-box">
           <h3>${store.name}</h3>
           <div><strong>담당자</strong> <span>${store.manager || "-"}</span></div>
-          <div><strong>브랜드</strong> <span>${store.brand || "-"}</span></div>
-                    <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
+          <div><strong>운영요일</strong> <span>${store.operating_days || "-"}</span></div>
+          <div><strong>운영시간</strong> <span>${store.operating_hours || "-"}</span></div>
+          <div><strong>주소</strong> <span>${store.address || "-"}</span></div>
           <div><strong>상세주소</strong> <span>${store.detail_address || "-"}</span></div>
           <div><strong>전화</strong> <span>${store.phone || "-"}</span></div>
           <div><strong>비고</strong> <span>${store.note || "-"}</span></div>
@@ -1737,12 +1707,10 @@
 
     function buildStoreMarker(store, coords) {
       const region = extractRegion(store.address);
-      const markerContent = createModernMarkerContent(getMarkerColor(store));
-
-      const marker = new kakao.maps.CustomOverlay({
+      const marker = new kakao.maps.Marker({
         position: coords,
-        content: markerContent,
-        yAnchor: 1
+        image: createMarkerImage(getMarkerColor(store)),
+        zIndex: getMarkerZIndex(store)
       });
 
       marker.setMap(map);
@@ -1752,11 +1720,10 @@
         region,
         coords,
         marker,
-        markerContent,
         infowindow: null
       };
 
-      markerContent.addEventListener("click", function() {
+      kakao.maps.event.addListener(marker, "click", function() {
         selectStore(storeData);
       });
 
