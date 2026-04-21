@@ -357,7 +357,7 @@
 
     .info-box {
       padding: 16px;
-      width: 320px;
+      width: 300px;
       max-width: calc(100vw - 48px);
       line-height: 1.8;
       font-size: 14px;
@@ -534,7 +534,7 @@
       }
 
       .info-box {
-        width: min(240px, calc(100vw - 40px));
+        width: min(230px, calc(100vw - 36px));
         padding: 10px;
         font-size: 12px;
         line-height: 1.6;
@@ -1393,10 +1393,11 @@
 
       if (isMobileDevice()) {
         map.setLevel(4);
-        map.setCenter(store.coords);
+        const movedCenter = getOffsetCenter(store.coords, 0, 120);
+        map.setCenter(movedCenter);
       } else {
         map.setLevel(3);
-        const movedCenter = getOffsetCenter(store.coords, 120, 8);
+        const movedCenter = getOffsetCenter(store.coords, 170, 90);
         map.setCenter(movedCenter);
       }
     }
@@ -1419,7 +1420,7 @@
     function openStoreInfo(store) {
       if (!store || !store.marker) return;
 
-      const yAnchor = isMobileDevice() ? 1.9 : 2.1;
+      const yAnchor = isMobileDevice() ? 2.15 : 2.25;
       const xAnchor = 0.5;
       const infoContent = createInfoWindowContent(store);
 
