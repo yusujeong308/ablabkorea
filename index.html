@@ -278,6 +278,9 @@
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   <script>
+    function getFavoriteButtonLabel(name, isLarge) {
+  return isFavoriteStore(name) ? '★' : '☆';
+}
     if (window.Kakao && !window.Kakao.isInitialized()) {
       Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
     }
