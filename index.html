@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABLAB 거래처 지도</title>
+  <title>거래 매장</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f8f9fb; }
@@ -533,9 +533,14 @@
       return new kakao.maps.MarkerImage(imageSrc, new kakao.maps.Size(22, 32), { offset: new kakao.maps.Point(11, 32) });
     }
     function clearPendingInfoWindowOpen() { if (pendingInfoWindowTimer) { clearTimeout(pendingInfoWindowTimer); pendingInfoWindowTimer = null; } }
-    function closeAllInfoWindows() {
+    function closeAllInfoWindows(resetInstances = false) {
       clearPendingInfoWindowOpen();
-      storeMarkers.forEach(store => { if (store.infowindow) store.infowindow.close(); });
+      storeMarkers.forEach(store => {
+        if (store.infowindow) {
+          store.infowindow.close();
+          if (resetInstances) store.infowindow = null;
+        }
+      });
       openedInfowindow = null;
     }
     function closeOpenedInfowindow() { if (openedInfowindow) { openedInfowindow.close(); openedInfowindow = null; } }
@@ -1402,7 +1407,7 @@
 
     function handleInfoWindowClose() {
       clearPendingInfoWindowOpen();
-      closeAllInfoWindows();
+      closeAllInfoWindows(true);
       selectedStoreName = null;
       routeEndStore = null;
       const currentResults = getDisplayStores(getCurrentFilterValues());
