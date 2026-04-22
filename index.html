@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABLAB 거래처 지도</title>
+  <title>거래 매장 / 신규 매장 통합 지도</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f8f9fb; }
@@ -559,27 +559,40 @@
       return scoped;
     }
 
+    function getOpenFilterOptions(stores) {
+      const statusLabelMap = {
+        '운영중': { value: 'open', label: '운영중' },
+        '브레이크타임': { value: 'break', label: '브레이크타임' },
+        '미운영': { value: 'closed', label: '운영종료' },
+        '정보없음': { value: 'empty', label: '운영정보 없음' }
+      };
+      const orderedStatuses = ['운영중', '브레이크타임', '미운영', '정보없음'];
+      const existingStatuses = new Set(stores.map(store => getStoreStatus(store).status));
+      return orderedStatuses
+        .filter(status => existingStatuses.has(status))
+        .map(status => statusLabelMap[status]);
+    }
+
     function renderFilterOptions() {
       const current = getCurrentFilterValues();
       currentConfig.filters.forEach((filter, index) => {
         let options = [];
+        const parentScopedFilters = getParentScopedFilters(current, index);
+        const scopedStores = getFilteredBaseStores(parentScopedFilters);
 
         if (filter.type === 'open') {
           const el = document.getElementById(filter.id);
           if (el) {
+            const openOptions = getOpenFilterOptions(scopedStores);
             el.innerHTML = '';
             el.appendChild(new Option(filter.label, ''));
-            el.appendChild(new Option('운영중', 'open'));
-            el.appendChild(new Option('브레이크타임', 'break'));
-            el.appendChild(new Option('운영종료', 'closed'));
-            el.appendChild(new Option('운영정보 없음', 'empty'));
-            el.value = current.open || '';
+            openOptions.forEach(option => el.appendChild(new Option(option.label, option.value)));
+            if (openOptions.some(option => option.value === (current.open || ''))) {
+              el.value = current.open || '';
+            }
           }
           return;
         }
-
-        const parentScopedFilters = getParentScopedFilters(current, index);
-        const scopedStores = getFilteredBaseStores(parentScopedFilters);
 
         if (filter.type === 'manager') options = createUniqueOptions(scopedStores.map(store => store.manager));
         if (filter.type === 'brand') options = createUniqueOptions(scopedStores.map(store => store.brand));
