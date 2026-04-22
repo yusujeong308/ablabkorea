@@ -45,6 +45,22 @@
     .filter-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #f1f3f5; color: #333; font-size: 12px; line-height: 1; }
     .filter-tag button { border: none; background: transparent; color: #666; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
     .result-summary { margin-top: 10px; font-size: 12px; color: #666; line-height: 1.5; }
+    .quick-actions-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .quick-actions-row button.active { background: #0b63ce; }
+    .quick-store-panel { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background: #fff; }
+    .quick-store-panel.hidden { display: none; }
+    .quick-store-title { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #222; }
+    .quick-store-list { display: flex; flex-direction: column; gap: 8px; }
+    .quick-store-item { border: 1px solid #ececec; border-radius: 10px; padding: 10px; cursor: pointer; background: #fff; }
+    .quick-store-item:hover { background: #f7f7f7; }
+    .quick-store-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .quick-store-item-name { font-size: 13px; font-weight: 700; color: #222; }
+    .quick-store-item-meta { font-size: 12px; color: #666; line-height: 1.4; }
+    .favorite-btn { border: 1px solid #d9d9d9; background: #fff; color: #999; border-radius: 999px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+    .favorite-btn.active { color: #f08c00; border-color: #f08c00; background: #fff8e1; }
+    .store-item-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .distance-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px; background: #eef2ff; color: #364fc7; font-size: 12px; font-weight: 700; }
+    .location-hint { margin-top: 8px; font-size: 11px; color: #666; line-height: 1.4; }
     .route-box { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; background: #fffdf7; flex-shrink: 0; }
     .route-box h3 { margin: 0 0 10px; font-size: 16px; }
     .route-row { font-size: 13px; line-height: 1.6; margin-bottom: 4px; color: #444; }
@@ -155,6 +171,11 @@
       .filter-box.full { grid-column: 1 / -1; }
       .active-filter-tags { gap: 5px; }
       .filter-tag { font-size: 11px; padding: 5px 8px; }
+      .quick-actions-row { gap: 6px; }
+      .quick-store-panel { padding: 10px 12px; }
+      .quick-store-title { font-size: 13px; }
+      .favorite-btn { font-size: 11px; padding: 4px 7px; }
+      .distance-badge { font-size: 11px; }
       .marker-legend { right: 12px; bottom: 100px; width: 180px; }
       .marker-legend-header { padding: 8px 10px; font-size: 12px; }
       .marker-legend-close { padding: 5px 8px; font-size: 11px; }
@@ -187,6 +208,12 @@
           <button type="button" class="secondary" onclick="resetFilters()">필터 초기화</button>
         </div>
 
+        <div class="quick-actions-row">
+          <button type="button" id="nearbySortBtn" onclick="enableNearbySort()">내 주변 매장</button>
+          <button type="button" id="favoritesOnlyBtn" class="secondary" onclick="toggleFavoritesOnly()">즐겨찾기만</button>
+        </div>
+        <div id="locationHint" class="location-hint"></div>
+
         <div id="activeFilterTags" class="active-filter-tags"></div>
         <div id="resultSummary" class="result-summary"></div>
       </div>
@@ -205,6 +232,14 @@
         <div class="selected-store" id="selectedStore">
           <h2>매장을 선택하세요</h2>
           <div class="row">아래 목록이나 지도 핀을 누르면 상세 정보가 표시됩니다.</div>
+        </div>
+        <div id="favoritePanel" class="quick-store-panel hidden">
+          <h3 class="quick-store-title">즐겨찾기</h3>
+          <div id="favoriteList" class="quick-store-list"></div>
+        </div>
+        <div id="recentPanel" class="quick-store-panel hidden">
+          <h3 class="quick-store-title">최근 본 매장</h3>
+          <div id="recentList" class="quick-store-list"></div>
         </div>
         <div class="store-list" id="storeList"></div>
       </div>
@@ -363,6 +398,13 @@
       trade: { keyword: '', manager: '', brand: '', region: '', open: '' },
       new: { keyword: '', brand: '', region: '', open: '' }
     };
+    const STORAGE_KEYS = { favorites: 'ablab_map_favorites_v1', recents: 'ablab_map_recents_v1' };
+
+    let favoritesByTab = { trade: [], new: [] };
+    let recentsByTab = { trade: [], new: [] };
+    let userLocation = null;
+    let favoritesOnly = false;
+    let nearbySortEnabled = false;
 
     let stores = [];
     let storesForFilter = [];
@@ -501,6 +543,152 @@
     }
     function closeOpenedInfowindow() { if (openedInfowindow) { openedInfowindow.close(); openedInfowindow = null; } }
     function getSelectedStoreData() { return storeMarkers.find(store => store.name === selectedStoreName) || null; }
+    function safeParseStorage(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+    function loadSavedStoreMeta() {
+      const favorites = safeParseStorage(STORAGE_KEYS.favorites, { trade: [], new: [] });
+      const recents = safeParseStorage(STORAGE_KEYS.recents, { trade: [], new: [] });
+      favoritesByTab = { trade: Array.isArray(favorites.trade) ? favorites.trade : [], new: Array.isArray(favorites.new) ? favorites.new : [] };
+      recentsByTab = { trade: Array.isArray(recents.trade) ? recents.trade : [], new: Array.isArray(recents.new) ? recents.new : [] };
+    }
+    function saveStoreMeta() {
+      localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(favoritesByTab));
+      localStorage.setItem(STORAGE_KEYS.recents, JSON.stringify(recentsByTab));
+    }
+    function getCurrentFavorites() { return favoritesByTab[currentAppKey] || []; }
+    function getCurrentRecents() { return recentsByTab[currentAppKey] || []; }
+    function isFavoriteStore(name) { return getCurrentFavorites().includes(name); }
+    function toggleFavoriteByEncoded(encodedName) {
+      const name = decodeURIComponent(encodedName || '');
+      if (!name) return;
+      const list = getCurrentFavorites().slice();
+      const index = list.indexOf(name);
+      if (index >= 0) list.splice(index, 1);
+      else list.unshift(name);
+      favoritesByTab[currentAppKey] = list.slice(0, 30);
+      saveStoreMeta();
+      renderQuickPanels();
+      renderStoreList(getDisplayStores(getCurrentFilterValues()));
+      const selected = getSelectedStoreData();
+      if (selected) renderSelectedStore(selected);
+      updateQuickActionButtons();
+    }
+    function addRecentStore(name) {
+      if (!name) return;
+      const list = getCurrentRecents().filter(item => item !== name);
+      list.unshift(name);
+      recentsByTab[currentAppKey] = list.slice(0, 6);
+      saveStoreMeta();
+    }
+    function getStoreByName(name) { return storeMarkers.find(store => store.name === name) || null; }
+    function toRad(value) { return value * Math.PI / 180; }
+    function calculateDistanceKm(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+    function getStoreDistanceKm(store) {
+      if (!userLocation || !store || !store.coords) return null;
+      return calculateDistanceKm(userLocation.lat, userLocation.lng, store.coords.getLat(), store.coords.getLng());
+    }
+    function formatDistance(distanceKm) {
+      if (distanceKm === null || Number.isNaN(distanceKm)) return '거리 없음';
+      if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
+      return `${distanceKm.toFixed(1)}km`;
+    }
+    function getDistanceBadge(store) {
+      const distance = getStoreDistanceKm(store);
+      if (distance === null) return '';
+      return `<span class="distance-badge">${formatDistance(distance)}</span>`;
+    }
+    function sortStoresForDisplay(items) {
+      const copied = [...items];
+      if (nearbySortEnabled && userLocation) {
+        copied.sort((a, b) => {
+          const ad = getStoreDistanceKm(a);
+          const bd = getStoreDistanceKm(b);
+          if (ad !== null && bd !== null && ad !== bd) return ad - bd;
+          if (ad !== null && bd === null) return -1;
+          if (ad === null && bd !== null) return 1;
+          return String(a.name || '').localeCompare(String(b.name || ''), 'ko');
+        });
+      }
+      return copied;
+    }
+    function getDisplayStores(filters = {}) {
+      let results = getFilteredMarkerStores(filters);
+      if (favoritesOnly) results = results.filter(store => isFavoriteStore(store.name));
+      return sortStoresForDisplay(results);
+    }
+    function updateQuickActionButtons() {
+      const nearbyBtn = document.getElementById('nearbySortBtn');
+      const favoritesBtn = document.getElementById('favoritesOnlyBtn');
+      if (nearbyBtn) nearbyBtn.classList.toggle('active', !!(nearbySortEnabled && userLocation));
+      if (favoritesBtn) favoritesBtn.classList.toggle('active', !!favoritesOnly);
+    }
+    function renderLocationHint() {
+      const el = document.getElementById('locationHint');
+      if (!el) return;
+      if (userLocation) el.textContent = nearbySortEnabled ? '현재 위치 기준 거리 표시 및 가까운 순 정렬 중' : '현재 위치를 불러왔어요. 거리 표시가 활성화됐어요.';
+      else el.textContent = '내 주변 매장을 누르면 현재 위치 기준 거리와 가까운 순 정렬을 사용할 수 있어요.';
+    }
+    function renderQuickPanelList(targetId, storesList, emptyText) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.innerHTML = storesList.length ? storesList.map(store => `
+        <div class="quick-store-item" onclick="selectStoreByName('${encodeURIComponent(store.name || '')}')">
+          <div class="quick-store-item-top">
+            <span class="quick-store-item-name">${escapeHtml(store.name || '')}</span>
+            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodeURIComponent(store.name || '')}')">★</button>
+          </div>
+          <div class="quick-store-item-meta">${escapeHtml(store.address || '-')}${getStoreDistanceKm(store) !== null ? ' / ' + formatDistance(getStoreDistanceKm(store)) : ''}</div>
+        </div>
+      `).join('') : `<div class="quick-store-item-meta">${emptyText}</div>`;
+    }
+    function renderQuickPanels() {
+      const favoriteNames = getCurrentFavorites();
+      const recentNames = getCurrentRecents();
+      const favoriteStores = favoriteNames.map(getStoreByName).filter(Boolean);
+      const recentStores = recentNames.map(getStoreByName).filter(Boolean);
+      const favoritePanel = document.getElementById('favoritePanel');
+      const recentPanel = document.getElementById('recentPanel');
+      if (favoritePanel) favoritePanel.classList.toggle('hidden', favoriteStores.length === 0);
+      if (recentPanel) recentPanel.classList.toggle('hidden', recentStores.length === 0);
+      renderQuickPanelList('favoriteList', favoriteStores, '즐겨찾기한 매장이 없습니다.');
+      renderQuickPanelList('recentList', recentStores, '최근 본 매장이 없습니다.');
+    }
+    function selectStoreByName(encodedName) {
+      const name = decodeURIComponent(encodedName || '');
+      const store = getStoreByName(name);
+      if (store) selectStore(store);
+    }
+    function enableNearbySort() {
+      if (!navigator.geolocation) return alert('이 브라우저에서는 위치 정보를 지원하지 않습니다.');
+      navigator.geolocation.getCurrentPosition(position => {
+        userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+        nearbySortEnabled = true;
+        renderLocationHint();
+        updateQuickActionButtons();
+        renderQuickPanels();
+        applyFilters();
+      }, error => {
+        console.error(error);
+        alert('현재 위치를 가져오지 못했습니다. 브라우저 위치 권한을 확인해 주세요.');
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
+    }
+    function toggleFavoritesOnly() {
+      favoritesOnly = !favoritesOnly;
+      updateQuickActionButtons();
+      applyFilters();
+    }
     function rebuildStoresForFilter() { storesForFilter = stores.map(store => ({ ...store, region: extractRegion(store.address) })); }
     function hasValidCoords(store) {
       return store.lat !== undefined && store.lng !== undefined && store.lat !== null && store.lng !== null && String(store.lat).trim() !== '' && String(store.lng).trim() !== '';
@@ -685,6 +873,8 @@
         const value = filters[filter.type] || '';
         if (value) parts.push(getFilterDisplayText(filter.type, value));
       });
+      if (favoritesOnly) parts.push('즐겨찾기만');
+      if (nearbySortEnabled && userLocation) parts.push('가까운 순');
       const summaryTail = parts.length ? ` / ${parts.join(' / ')}` : '';
       el.textContent = `${currentConfig.tabLabel} ${count}개${summaryTail}`;
     }
@@ -710,6 +900,10 @@
         const el = document.getElementById(filter.id);
         if (el) el.value = '';
       });
+      favoritesOnly = false;
+      nearbySortEnabled = false;
+      updateQuickActionButtons();
+      renderLocationHint();
     }
 
     function applyOpenOnlyQuickFilter() {
@@ -733,9 +927,14 @@
       }
       const statusInfo = getStoreStatus(store);
       const rows = currentConfig.selectedFields.map(field => `<div class="row"><span class="label">${field.label}</span>${escapeHtml(store[field.key] || '-')}</div>`).join('');
+      const encodedName = encodeURIComponent(store.name || '');
       box.innerHTML = `
         <div class="status-top ${getStatusClass(statusInfo.status)}">${escapeHtml(statusInfo.message)}</div>
         <h2>${escapeHtml(store.name || '')}</h2>
+        <div class="store-item-footer">
+          ${getDistanceBadge(store)}
+          <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="toggleFavoriteByEncoded('${encodedName}')">★ 즐겨찾기</button>
+        </div>
         ${rows}
         <div class="selected-actions">
           <button type="button" onclick="setSelectedAsStart()">출발지로 설정</button>
@@ -755,7 +954,7 @@
       const list = document.getElementById('storeList');
       list.innerHTML = '';
       const statusOrder = { '운영중': 1, '브레이크타임': 2, '미운영': 3, '정보없음': 4 };
-      const sortedItems = [...items].sort((a, b) => {
+      const sortedItems = nearbySortEnabled && userLocation ? [...items] : [...items].sort((a, b) => {
         if (currentConfig.key === 'new' && currentPinMode !== 'open') {
           const orderMap = { '1팀': 1, '2팀': 2, '3팀': 3, '3': 3, '기타': 4, '': 5 };
           const ao = orderMap[String(a.brand || '').trim()] ?? 5;
@@ -772,8 +971,14 @@
       sortedItems.forEach(store => {
         const statusInfo = getStoreStatus(store);
         const div = document.createElement('div');
+        const encodedName = encodeURIComponent(store.name || '');
         div.className = 'store-item' + (selectedStoreName === store.name ? ' active' : '');
-        div.innerHTML = currentConfig.listRenderer(store, statusInfo);
+        div.innerHTML = currentConfig.listRenderer(store, statusInfo) + `
+          <div class="store-item-footer">
+            ${getDistanceBadge(store)}
+            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodedName}')">★</button>
+          </div>
+        `;
         div.addEventListener('click', () => selectStore(store));
         fragment.appendChild(div);
       });
@@ -854,11 +1059,13 @@
       if (!targetStore || !targetStore.coords || !targetStore.marker) return;
       clearPendingInfoWindowOpen();
       selectedStoreName = targetStore.name;
+      addRecentStore(targetStore.name);
       renderSelectedStore(targetStore);
       if (!routeEndStore) routeEndStore = targetStore;
       renderRouteInfo();
-      const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
+      const currentResults = getDisplayStores(getCurrentFilterValues());
       const renderItems = currentResults.some(item => item.name === targetStore.name) ? currentResults : [targetStore, ...currentResults];
+      renderQuickPanels();
       renderStoreList(renderItems);
       closeOpenedInfowindow();
       if (isMobileDevice()) await scrollMapIntoView(); else await scrollSidebarToTop();
@@ -885,19 +1092,22 @@
       const current = getCurrentFilterValues();
       saveCurrentTabState();
       renderActiveFilterTags();
-      const results = getFilteredMarkerStores(current);
+      const results = getDisplayStores(current);
       const selectedStore = getSelectedStoreData();
       closeAllInfoWindows();
       const isEmpty = !current.keyword && !current.manager && !current.brand && !current.region && !current.open;
       if (isEmpty) {
-        updateMarkers(storeMarkers, false);
-        renderStoreList(storeMarkers);
-        renderResultSummary(storeMarkers.length, current);
+        const displayStores = getDisplayStores(current);
+        updateMarkers(displayStores, false);
+        renderQuickPanels();
+        renderStoreList(displayStores);
+        renderResultSummary(displayStores.length, current);
         if (selectedStore) { renderSelectedStore(selectedStore); openStoreInfo(selectedStore); } else { renderDefaultMessage(); }
         return;
       }
       if (results.length === 0) {
         updateMarkers([], false);
+        renderQuickPanels();
         document.getElementById('storeList').innerHTML = '';
         selectedStoreName = null;
         renderResultSummary(0, current);
@@ -905,6 +1115,7 @@
         return;
       }
       updateMarkers(results, true);
+      renderQuickPanels();
       renderStoreList(results);
       renderResultSummary(results.length, current);
       if (selectedStore && results.some(store => store.name === selectedStore.name)) {
@@ -1129,6 +1340,8 @@
       document.getElementById('markerLegend').classList.add('hidden');
       document.getElementById('markerLegendToggle').style.display = 'block';
       currentPinMode = currentConfig.defaultPinMode;
+      renderLocationHint();
+      updateQuickActionButtons();
       closeRoadviewPanel();
       stopRoadviewPickMode();
     }
@@ -1138,7 +1351,10 @@
       currentAppKey = tabKey;
       currentConfig = APP_CONFIGS[tabKey];
       resetUiForTab();
-      loadStoresFromSheet();
+      loadSavedStoreMeta();
+    renderLocationHint();
+    updateQuickActionButtons();
+    loadStoresFromSheet();
     }
 
     function handleInfoWindowClose() {
@@ -1146,8 +1362,9 @@
       closeAllInfoWindows();
       selectedStoreName = null;
       routeEndStore = null;
-      const currentResults = getFilteredMarkerStores(getCurrentFilterValues());
-      renderStoreList(currentResults.length ? currentResults : storeMarkers);
+      const currentResults = getDisplayStores(getCurrentFilterValues());
+      renderQuickPanels();
+      renderStoreList(currentResults.length ? currentResults : getDisplayStores({}));
       renderDefaultMessage();
       renderRouteInfo();
     }
