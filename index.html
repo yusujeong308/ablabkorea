@@ -41,6 +41,10 @@
     .filter-box select { width: 100%; padding: 10px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; background: #fff; }
     .filter-actions, .selected-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .filter-actions button.secondary, .route-actions button.secondary, .selected-actions button.secondary { background: #e9ecef; color: #222; }
+    .active-filter-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 0; }
+    .filter-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #f1f3f5; color: #333; font-size: 12px; line-height: 1; }
+    .filter-tag button { border: none; background: transparent; color: #666; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
+    .result-summary { margin-top: 10px; font-size: 12px; color: #666; line-height: 1.5; }
     .route-box { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; background: #fffdf7; flex-shrink: 0; }
     .route-box h3 { margin: 0 0 10px; font-size: 16px; }
     .route-row { font-size: 13px; line-height: 1.6; margin-bottom: 4px; color: #444; }
@@ -149,6 +153,8 @@
       .selected-store .label { width: 60px; }
       .filter-grid { grid-template-columns: 1fr 1fr; }
       .filter-box.full { grid-column: 1 / -1; }
+      .active-filter-tags { gap: 5px; }
+      .filter-tag { font-size: 11px; padding: 5px 8px; }
       .marker-legend { right: 12px; bottom: 100px; width: 180px; }
       .marker-legend-header { padding: 8px 10px; font-size: 12px; }
       .marker-legend-close { padding: 5px 8px; font-size: 11px; }
@@ -167,7 +173,7 @@
           <button type="button" class="tab-btn" id="newTabBtn" onclick="switchTab('new')">신규 매장</button>
         </div>
 
-        <h1 class="sidebar-title" id="sidebarTitle">거래처 매장 지도</h1>
+        <h1 class="sidebar-title" id="sidebarTitle">ABLAB 거래처 지도</h1>
 
         <div class="search-box">
           <input type="text" id="searchInput" placeholder="매장명 / 브랜드 / 주소 / 상세주소 검색" />
@@ -177,8 +183,12 @@
         <div class="filter-grid" id="filterGrid"></div>
 
         <div class="filter-actions">
+          <button type="button" onclick="applyOpenOnlyQuickFilter()">운영중만</button>
           <button type="button" class="secondary" onclick="resetFilters()">필터 초기화</button>
         </div>
+
+        <div id="activeFilterTags" class="active-filter-tags"></div>
+        <div id="resultSummary" class="result-summary"></div>
       </div>
 
       <div class="route-box">
@@ -245,7 +255,7 @@
       trade: {
         key: 'trade',
         tabLabel: '거래 매장',
-        title: '거래처 매장 지도',
+        title: 'ABLAB 거래처 지도',
         searchPlaceholder: '매장명 / 브랜드 / 주소 / 상세주소 검색',
         sheetApiUrl: 'https://script.google.com/macros/s/AKfycbzFmqPMmdvsoaEr7DnuP-uC8y1fq6xDDzLah7poMc-RgQ9nCAnA-mVveEZrXbBKupMm/exec',
         defaultPinMode: 'manager',
@@ -290,7 +300,7 @@
       new: {
         key: 'new',
         tabLabel: '신규 매장',
-        title: '신규 매장 지도',
+        title: 'ABLAB 거래처 지도',
         searchPlaceholder: '매장명 / 확인용 / 주소 / 상세주소 검색',
         sheetApiUrl: 'https://script.google.com/macros/s/AKfycbwLPCGhGrGqmxssyX3D6lXAe9cvaJ-zyKgiv8x8Hq4GBFzqmfblFROA3G2AWBAi9fYM/exec',
         defaultPinMode: 'check',
@@ -349,6 +359,10 @@
 
     let currentAppKey = 'trade';
     let currentConfig = APP_CONFIGS.trade;
+    const tabUiState = {
+      trade: { keyword: '', manager: '', brand: '', region: '', open: '' },
+      new: { keyword: '', brand: '', region: '', open: '' }
+    };
 
     let stores = [];
     let storesForFilter = [];
@@ -543,12 +557,28 @@
       return storeMarkers.filter(store => names.has(store.name));
     }
 
-    function fillSelect(selectId, defaultLabel, options) {
+    function formatOptionLabel(value, count) {
+      return `${value} (${count})`;
+    }
+
+    function fillSelect(selectId, defaultLabel, options, currentValue = '') {
       const el = document.getElementById(selectId);
       if (!el) return;
       el.innerHTML = '';
       el.appendChild(new Option(defaultLabel, ''));
-      options.forEach(value => el.appendChild(new Option(value, value)));
+      options.forEach(option => {
+        if (option && typeof option === 'object') el.appendChild(new Option(option.label, option.value));
+        else el.appendChild(new Option(option, option));
+      });
+      if ([...el.options].some(opt => opt.value === currentValue)) el.value = currentValue;
+    }
+
+    function getScopedFiltersForOption(current, currentType) {
+      const scoped = { keyword: current.keyword || '' };
+      currentConfig.filters.forEach(filter => {
+        if (filter.type !== currentType) scoped[filter.type] = current[filter.type] || '';
+      });
+      return scoped;
     }
 
     function getParentScopedFilters(current, filterIndex) {
@@ -567,43 +597,127 @@
         '정보없음': { value: 'empty', label: '운영정보 없음' }
       };
       const orderedStatuses = ['운영중', '브레이크타임', '미운영', '정보없음'];
-      const existingStatuses = new Set(stores.map(store => getStoreStatus(store).status));
+      const counts = {};
+      stores.forEach(store => {
+        const status = getStoreStatus(store).status;
+        counts[status] = (counts[status] || 0) + 1;
+      });
       return orderedStatuses
-        .filter(status => existingStatuses.has(status))
-        .map(status => statusLabelMap[status]);
+        .filter(status => counts[status] > 0)
+        .map(status => ({
+          value: statusLabelMap[status].value,
+          label: formatOptionLabel(statusLabelMap[status].label, counts[status])
+        }));
     }
 
     function renderFilterOptions() {
       const current = getCurrentFilterValues();
       currentConfig.filters.forEach((filter, index) => {
-        let options = [];
         const parentScopedFilters = getParentScopedFilters(current, index);
         const scopedStores = getFilteredBaseStores(parentScopedFilters);
 
         if (filter.type === 'open') {
-          const el = document.getElementById(filter.id);
-          if (el) {
-            const openOptions = getOpenFilterOptions(scopedStores);
-            el.innerHTML = '';
-            el.appendChild(new Option(filter.label, ''));
-            openOptions.forEach(option => el.appendChild(new Option(option.label, option.value)));
-            if (openOptions.some(option => option.value === (current.open || ''))) {
-              el.value = current.open || '';
-            }
-          }
+          fillSelect(filter.id, filter.label, getOpenFilterOptions(scopedStores), current.open || '');
           return;
         }
 
-        if (filter.type === 'manager') options = createUniqueOptions(scopedStores.map(store => store.manager));
-        if (filter.type === 'brand') options = createUniqueOptions(scopedStores.map(store => store.brand));
-        if (filter.type === 'region') options = createUniqueOptions(scopedStores.map(store => store.region));
+        const optionScopedFilters = getScopedFiltersForOption(current, filter.type);
+        const optionStores = getFilteredBaseStores(optionScopedFilters);
+        const counts = new Map();
 
-        fillSelect(filter.id, filter.label, options);
-        const el = document.getElementById(filter.id);
-        if (el && options.includes(current[filter.type] || '')) {
-          el.value = current[filter.type] || '';
-        }
+        optionStores.forEach(store => {
+          const rawValue = String(store[filter.type] || '').trim();
+          if (!rawValue) return;
+          counts.set(rawValue, (counts.get(rawValue) || 0) + 1);
+        });
+
+        let orderedValues = [];
+        if (filter.type === 'manager') orderedValues = createUniqueOptions(scopedStores.map(store => store.manager));
+        if (filter.type === 'brand') orderedValues = createUniqueOptions(scopedStores.map(store => store.brand));
+        if (filter.type === 'region') orderedValues = createUniqueOptions(scopedStores.map(store => store.region));
+
+        const options = orderedValues.map(value => ({
+          value,
+          label: formatOptionLabel(value, counts.get(value) || 0)
+        }));
+
+        fillSelect(filter.id, filter.label, options, current[filter.type] || '');
       });
+    }
+
+    function getFilterDisplayText(filterType, value) {
+      if (!value) return '';
+      if (filterType === 'open') {
+        const labelMap = { open: '운영중', break: '브레이크타임', closed: '운영종료', empty: '운영정보 없음' };
+        return labelMap[value] || value;
+      }
+      return value;
+    }
+
+    function renderActiveFilterTags() {
+      const wrap = document.getElementById('activeFilterTags');
+      if (!wrap) return;
+      const current = getCurrentFilterValues();
+      const tags = [];
+
+      if (current.keyword) tags.push({ type: 'keyword', label: `검색: ${document.getElementById('searchInput').value.trim()}` });
+
+      currentConfig.filters.forEach(filter => {
+        const value = current[filter.type] || '';
+        if (!value) return;
+        tags.push({ type: filter.type, label: getFilterDisplayText(filter.type, value) });
+      });
+
+      wrap.innerHTML = tags.map(tag => `
+        <span class="filter-tag">
+          <span>${escapeHtml(tag.label)}</span>
+          <button type="button" onclick="removeFilterTag('${tag.type}')">×</button>
+        </span>
+      `).join('');
+    }
+
+    function renderResultSummary(count, filters) {
+      const el = document.getElementById('resultSummary');
+      if (!el) return;
+      const parts = [];
+      if (filters.keyword) parts.push(`검색어: ${document.getElementById('searchInput').value.trim()}`);
+      currentConfig.filters.forEach(filter => {
+        const value = filters[filter.type] || '';
+        if (value) parts.push(getFilterDisplayText(filter.type, value));
+      });
+      const summaryTail = parts.length ? ` / ${parts.join(' / ')}` : '';
+      el.textContent = `${currentConfig.tabLabel} ${count}개${summaryTail}`;
+    }
+
+    function removeFilterTag(type) {
+      if (type === 'keyword') document.getElementById('searchInput').value = '';
+      else {
+        const targetFilter = currentConfig.filters.find(filter => filter.type === type);
+        if (targetFilter) {
+          const el = document.getElementById(targetFilter.id);
+          if (el) el.value = '';
+        }
+      }
+      applyFilters();
+    }
+    function saveCurrentTabState() {
+      tabUiState[currentAppKey] = { keyword: '', manager: '', brand: '', region: '', open: '' };
+    }
+
+    function restoreCurrentTabState() {
+      document.getElementById('searchInput').value = '';
+      currentConfig.filters.forEach(filter => {
+        const el = document.getElementById(filter.id);
+        if (el) el.value = '';
+      });
+    }
+
+    function applyOpenOnlyQuickFilter() {
+      const openFilter = currentConfig.filters.find(filter => filter.type === 'open');
+      if (!openFilter) return;
+      const el = document.getElementById(openFilter.id);
+      if (el) el.value = 'open';
+      applyFilters();
     }
 
     function renderRouteInfo() {
@@ -769,6 +883,8 @@
       if (storeMarkers.length === 0) return alert('매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
       renderFilterOptions();
       const current = getCurrentFilterValues();
+      saveCurrentTabState();
+      renderActiveFilterTags();
       const results = getFilteredMarkerStores(current);
       const selectedStore = getSelectedStoreData();
       closeAllInfoWindows();
@@ -776,6 +892,7 @@
       if (isEmpty) {
         updateMarkers(storeMarkers, false);
         renderStoreList(storeMarkers);
+        renderResultSummary(storeMarkers.length, current);
         if (selectedStore) { renderSelectedStore(selectedStore); openStoreInfo(selectedStore); } else { renderDefaultMessage(); }
         return;
       }
@@ -783,11 +900,13 @@
         updateMarkers([], false);
         document.getElementById('storeList').innerHTML = '';
         selectedStoreName = null;
+        renderResultSummary(0, current);
         renderNoResultMessage();
         return;
       }
       updateMarkers(results, true);
       renderStoreList(results);
+      renderResultSummary(results.length, current);
       if (selectedStore && results.some(store => store.name === selectedStore.name)) {
         renderSelectedStore(selectedStore); openStoreInfo(selectedStore);
       } else {
@@ -805,6 +924,9 @@
       selectedStoreName = null;
       closeAllInfoWindows();
       renderFilterOptions();
+      saveCurrentTabState();
+      renderActiveFilterTags();
+      renderResultSummary(storeMarkers.length, getCurrentFilterValues());
       updateMarkers(storeMarkers, false);
       renderStoreList(storeMarkers);
       renderDefaultMessage();
@@ -964,9 +1086,13 @@
       rebuildStoresForFilter();
       buildFilterGrid();
       renderFilterOptions();
+      restoreCurrentTabState();
+      renderFilterOptions();
+      renderActiveFilterTags();
       renderMarkerLegend();
       renderRouteInfo();
       renderStoreList(storesForFilter);
+      renderResultSummary(storesForFilter.length, getCurrentFilterValues());
       renderDefaultMessage();
       if (!stores.length) { renderNoResultMessage(); return; }
       const validStores = stores.filter(hasValidCoords);
@@ -1002,7 +1128,6 @@
       document.getElementById('newTabBtn').classList.toggle('active', currentAppKey === 'new');
       document.getElementById('markerLegend').classList.add('hidden');
       document.getElementById('markerLegendToggle').style.display = 'block';
-      document.getElementById('searchInput').value = '';
       currentPinMode = currentConfig.defaultPinMode;
       closeRoadviewPanel();
       stopRoadviewPickMode();
@@ -1061,6 +1186,9 @@
 
     document.getElementById('searchInput').addEventListener('keyup', function(event) { if (event.key === 'Enter') applyFilters(); });
     window.addEventListener('load', function() { resetUiForTab(); loadStoresFromSheet(); relayoutMapSafely(); });
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) relayoutMapSafely();
+    });
     window.addEventListener('resize', relayoutMapSafely);
     window.addEventListener('orientationchange', relayoutMapSafely);
     document.addEventListener('visibilitychange', function() { if (!document.hidden) relayoutMapSafely(); });
