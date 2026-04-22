@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABLAB 거래처 지도</title>
+  <title>거래 매장</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f8f9fb; }
@@ -56,12 +56,12 @@
     .quick-store-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
     .quick-store-item-name { font-size: 13px; font-weight: 700; color: #222; }
     .quick-store-item-meta { font-size: 12px; color: #666; line-height: 1.4; }
-    .favorite-btn { border: 1px solid #d9d9d9; background: #fff; color: #999; border-radius: 999px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
-    .favorite-btn.active { color: #f08c00; border-color: #f08c00; background: #fff8e1; }
+    .favorite-btn { border: 1px solid #d9d9d9; background: #fff; color: #6c757d; border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .favorite-btn.active { color: #8a5a00; border-color: #d9b35f; background: #f7f1e3; }
     .store-item-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
     .distance-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px; background: #eef2ff; color: #364fc7; font-size: 12px; font-weight: 700; }
     .location-hint { margin-top: 8px; font-size: 11px; color: #666; line-height: 1.4; }
-    .route-box { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; background: #fffdf7; flex-shrink: 0; }
+    .route-box { display: none; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; background: #fffdf7; flex-shrink: 0; }
     .route-box h3 { margin: 0 0 10px; font-size: 16px; }
     .route-row { font-size: 13px; line-height: 1.6; margin-bottom: 4px; color: #444; }
     .route-label { display: inline-block; width: 52px; font-weight: 700; color: #222; }
@@ -166,6 +166,7 @@
       .roadview-wrap.expanded { top: 56px; left: 12px; right: 12px; width: auto; height: calc(100% - 68px); }
       .store-item-title { font-size: 14px; }
       .store-item-address, .store-item-detail-address, .store-item-meta, .selected-store .row, .route-row { font-size: 12px; line-height: 1.5; }
+      .route-box { display: block; }
       .selected-store .label { width: 60px; }
       .filter-grid { grid-template-columns: 1fr 1fr; }
       .filter-box.full { grid-column: 1 / -1; }
@@ -676,7 +677,7 @@
         <div class="quick-store-item" onclick="selectStoreByName('${encodeURIComponent(store.name || '')}')">
           <div class="quick-store-item-top">
             <span class="quick-store-item-name">${escapeHtml(store.name || '')}</span>
-            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodeURIComponent(store.name || '')}')">★</button>
+            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodeURIComponent(store.name || '')}')">${getFavoriteButtonLabel(store.name, false)}</button>
           </div>
           <div class="quick-store-item-meta">${escapeHtml(store.address || '-')}${getStoreDistanceKm(store) !== null ? ' / ' + formatDistance(getStoreDistanceKm(store)) : ''}</div>
         </div>
@@ -963,7 +964,7 @@
         <h2>${escapeHtml(store.name || '')}</h2>
         <div class="store-item-footer">
           ${getDistanceBadge(store)}
-          <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="toggleFavoriteByEncoded('${encodedName}')">★ 즐겨찾기</button>
+          <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, true)}</button>
         </div>
         ${rows}
         <div class="selected-actions">
@@ -1006,7 +1007,7 @@
         div.innerHTML = currentConfig.listRenderer(store, statusInfo) + `
           <div class="store-item-footer">
             ${getDistanceBadge(store)}
-            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodedName}')">★</button>
+            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, false)}</button>
           </div>
         `;
         div.addEventListener('click', () => selectStore(store));
@@ -1326,7 +1327,6 @@
       resetMapData();
       rebuildStoresForFilter();
       buildFilterGrid();
-      renderFilterOptions();
       restoreCurrentTabState();
       renderFilterOptions();
       renderActiveFilterTags();
@@ -1341,9 +1341,35 @@
     }
 
     async function loadStoresFromSheet() {
+      const sheetUrl = String(currentConfig.sheetApiUrl || '').trim();
+      if (!sheetUrl) {
+        alert('구글시트 API 주소가 비어 있습니다.');
+        return;
+      }
+
       try {
-        const response = await fetch(currentConfig.sheetApiUrl, { cache: 'no-store' });
-        const data = await response.json();
+        const requestUrl = sheetUrl + (sheetUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+        const response = await fetch(requestUrl, {
+          method: 'GET',
+          cache: 'no-store',
+          redirect: 'follow',
+          headers: { 'Accept': 'application/json, text/plain, */*' }
+        });
+
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+
+        const rawText = await response.text();
+        let data;
+
+        try {
+          data = JSON.parse(rawText);
+        } catch (parseError) {
+          console.error('응답 원문:', rawText.slice(0, 300));
+          throw new Error('JSON parse failed');
+        }
+
         stores = Array.isArray(data) ? data.map(store => ({
           ...store,
           detail_address: store.detail_address ?? '',
@@ -1353,10 +1379,11 @@
           lat: store.lat ?? store.latitude ?? '',
           lng: store.lng ?? store.longitude ?? ''
         })) : [];
+
         initializeStores();
       } catch (error) {
-        console.error('매장 데이터 불러오기 실패:', error);
-        alert('구글시트 매장 데이터를 불러오지 못했습니다.');
+        console.error('매장 데이터 불러오기 실패:', error, currentConfig.sheetApiUrl);
+        alert('구글시트 매장 데이터를 불러오지 못했습니다. Apps Script 배포 주소와 공개 권한을 다시 확인해 주세요.');
       }
     }
 
