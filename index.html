@@ -52,9 +52,14 @@
     .active-filter-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 0; }
     .filter-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: #f1f3f5; color: #333; font-size: 12px; line-height: 1; }
     .filter-tag button { border: none; background: transparent; color: #666; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
-    .result-summary { margin-top: 10px; font-size: 12px; color: #666; line-height: 1.5; }
-    .quick-actions-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .result-summary-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top: 10px; }
+    .result-summary { font-size: 12px; color: #666; line-height: 1.5; flex:1; min-width:0; }
+    .quick-actions-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: nowrap; align-items:center; }
     .quick-actions-row button.active { background: #495057; color: #fff; }
+    .quick-actions-row .spacer { flex:1; }
+    .quick-actions-row button { min-width: 96px; }
+    .selected-store-distance-row { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+    .selected-store-distance-row .distance-badge { flex-shrink:0; margin-left:8px; }
     .quick-store-panel { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background: #fff; }
     .quick-store-panel.hidden { display: none; }
     .quick-store-title { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #222; }
@@ -187,6 +192,7 @@
       .active-filter-tags { gap: 5px; }
       .filter-tag { font-size: 11px; padding: 5px 8px; }
       .quick-actions-row { gap: 6px; }
+      .result-summary-row { gap:6px; }
       .quick-store-panel { padding: 10px 12px; }
       .quick-store-title { font-size: 13px; }
       .favorite-btn { font-size: 11px; padding: 4px 7px; }
@@ -219,18 +225,18 @@
 
         <div class="filter-grid" id="filterGrid"></div>
 
-        <div class="filter-actions">
-          <button type="button" class="secondary" onclick="resetFilters()">필터 초기화</button>
-        </div>
-
         <div class="quick-actions-row">
-          <button type="button" id="nearbySortBtn" onclick="enableNearbySort()">내 주변 매장</button>
+          <button type="button" class="secondary" onclick="resetFilters()">필터 초기화</button>
+          <div class="spacer"></div>
           <button type="button" id="favoritesOnlyBtn" class="secondary" onclick="toggleFavoritesOnly()">즐겨찾기만</button>
         </div>
         <div id="locationHint" class="location-hint"></div>
 
         <div id="activeFilterTags" class="active-filter-tags"></div>
-        <div id="resultSummary" class="result-summary"></div>
+        <div class="result-summary-row">
+          <div id="resultSummary" class="result-summary"></div>
+          <button type="button" id="nearbySortBtn" onclick="enableNearbySort()">내 주변 매장</button>
+        </div>
       </div>
 
       <div class="route-box">
@@ -1030,22 +1036,23 @@
         return;
       }
       const statusInfo = getStoreStatus(store);
-      const rows = currentConfig.selectedFields.map(field => `<div class="row"><span class="label">${field.label}</span>${escapeHtml(store[field.key] || '-')}</div>`).join('');
+      const rows = currentConfig.selectedFields.map(field => {
+        const value = escapeHtml(store[field.key] || '-');
+        if (field.key === 'note') {
+          return `<div class="row selected-store-distance-row"><div><span class="label">${field.label}</span>${value}</div>${getDistanceBadge(store)}</div>`;
+        }
+        return `<div class="row"><span class="label">${field.label}</span>${value}</div>`;
+      }).join('');
       const encodedName = encodeURIComponent(store.name || '');
       box.innerHTML = `
         <div class="status-top ${getStatusClass(statusInfo.status)}">${escapeHtml(statusInfo.message)}</div>
         <div class="selected-store-title-row">
           <h2>${escapeHtml(store.name || '')}</h2>
           <div class="selected-store-title-actions">
-            ${getDistanceBadge(store)}
             <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, true)}</button>
           </div>
         </div>
         ${rows}
-        <div class="selected-actions">
-          <button type="button" onclick="setSelectedAsStart()">출발지로 설정</button>
-          <button type="button" onclick="setSelectedAsEnd()">도착지로 설정</button>
-        </div>
       `;
     }
     function renderDefaultMessage() { renderSelectedStore(null); }
