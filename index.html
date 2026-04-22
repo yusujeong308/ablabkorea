@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABLAB 거래처 지도</title>
+  <title>거래 매장 / 신규 매장 통합 지도</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f8f9fb; }
@@ -551,13 +551,19 @@
       options.forEach(value => el.appendChild(new Option(value, value)));
     }
 
+    function getParentScopedFilters(current, filterIndex) {
+      const scoped = { keyword: current.keyword || '' };
+      currentConfig.filters.slice(0, filterIndex).forEach(parentFilter => {
+        scoped[parentFilter.type] = current[parentFilter.type] || '';
+      });
+      return scoped;
+    }
+
     function renderFilterOptions() {
       const current = getCurrentFilterValues();
-      currentConfig.filters.forEach(filter => {
+      currentConfig.filters.forEach((filter, index) => {
         let options = [];
-        if (filter.type === 'manager') options = createUniqueOptions(storesForFilter.map(store => store.manager));
-        if (filter.type === 'brand') options = createUniqueOptions(getFilteredBaseStores({ ...current, [filter.type]: '' }).map(store => store.brand));
-        if (filter.type === 'region') options = createUniqueOptions(getFilteredBaseStores({ ...current, [filter.type]: '' }).map(store => store.region));
+
         if (filter.type === 'open') {
           const el = document.getElementById(filter.id);
           if (el) {
@@ -571,9 +577,19 @@
           }
           return;
         }
+
+        const parentScopedFilters = getParentScopedFilters(current, index);
+        const scopedStores = getFilteredBaseStores(parentScopedFilters);
+
+        if (filter.type === 'manager') options = createUniqueOptions(scopedStores.map(store => store.manager));
+        if (filter.type === 'brand') options = createUniqueOptions(scopedStores.map(store => store.brand));
+        if (filter.type === 'region') options = createUniqueOptions(scopedStores.map(store => store.region));
+
         fillSelect(filter.id, filter.label, options);
         const el = document.getElementById(filter.id);
-        if (el) el.value = current[filter.type] || '';
+        if (el && options.includes(current[filter.type] || '')) {
+          el.value = current[filter.type] || '';
+        }
       });
     }
 
