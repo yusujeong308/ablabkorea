@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABLAB 거래처 매장</title>
+  <title>거래 매장</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f8f9fb; }
@@ -26,6 +26,14 @@
     .sidebar-title { margin: 0 0 14px; font-size: 20px; font-weight: 700; }
     .search-box { display: flex; gap: 8px; margin-bottom: 10px; }
     .search-box input { flex: 1; padding: 10px; font-size: 14px; border: 1px solid #d9d9d9; border-radius: 8px; }
+    .search-suggestions { display: none; margin-bottom: 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; overflow: hidden; }
+    .search-suggestions.open { display: block; }
+    .search-suggestion-item { padding: 10px 12px; border-top: 1px solid #f1f3f5; cursor: pointer; background: #fff; }
+    .search-suggestion-item:first-child { border-top: none; }
+    .search-suggestion-item:hover { background: #f8f9fa; }
+    .search-suggestion-title { font-size: 13px; font-weight: 700; color: #222; margin-bottom: 4px; }
+    .search-suggestion-meta { font-size: 12px; color: #666; line-height: 1.4; }
+    .search-suggestion-empty { padding: 10px 12px; font-size: 12px; color: #666; background: #fff; }
     .search-box button,
     .filter-actions button,
     .route-actions button,
@@ -80,6 +88,8 @@
     .store-item.active { border-color: #222; background: #f3f3f3; }
     .store-item-title { font-size: 15px; font-weight: 700; margin-bottom: 0; }
     .store-item-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .store-item-status-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .store-item-status-row .distance-badge { flex-shrink: 0; }
     .store-item-address { font-size: 13px; color: #555; line-height: 1.4; margin-bottom: 4px; }
     .store-item-detail-address { font-size: 12px; color: #777; line-height: 1.4; margin-bottom: 6px; }
     .store-item-meta { font-size: 12px; color: #666; line-height: 1.5; }
@@ -202,9 +212,10 @@
         <h1 class="sidebar-title" id="sidebarTitle">ABLAB 거래처 지도</h1>
 
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="매장명 / 브랜드 / 주소 / 상세주소 검색" />
+          <input type="text" id="searchInput" placeholder="매장명 / 브랜드 / 주소 / 상세주소 검색" autocomplete="off" />
           <button type="button" onclick="applyFilters()">검색</button>
         </div>
+        <div id="searchSuggestions" class="search-suggestions"></div>
 
         <div class="filter-grid" id="filterGrid"></div>
 
@@ -571,6 +582,9 @@
     function getCurrentFavorites() { return favoritesByTab[currentAppKey] || []; }
     function getCurrentRecents() { return recentsByTab[currentAppKey] || []; }
     function isFavoriteStore(name) { return getCurrentFavorites().includes(name); }
+    function getFavoriteButtonLabel(name, isLarge) {
+      return isFavoriteStore(name) ? '★' : '☆';
+    }
     function toggleFavoriteByEncoded(encodedName) {
       const name = decodeURIComponent(encodedName || '');
       if (!name) return;
@@ -931,6 +945,7 @@
 
     function restoreCurrentTabState() {
       document.getElementById('searchInput').value = '';
+      clearSearchSuggestions();
       currentConfig.filters.forEach(filter => {
         const el = document.getElementById(filter.id);
         if (el) el.value = '';
@@ -946,6 +961,60 @@
       if (!openFilter) return;
       const el = document.getElementById(openFilter.id);
       if (el) el.value = 'open';
+      applyFilters();
+    }
+
+    function getSearchSuggestionItems(keyword) {
+      const normalizedKeyword = normalizeText(keyword);
+      if (!normalizedKeyword) return [];
+      const seen = new Set();
+      const fields = currentConfig.searchFields || ['name', 'brand', 'address', 'detail_address'];
+      return storesForFilter.filter(store => {
+        const haystack = normalizeText(fields.map(key => store[key] || '').join(' '));
+        return haystack.includes(normalizedKeyword);
+      }).filter(store => {
+        if (seen.has(store.name)) return false;
+        seen.add(store.name);
+        return true;
+      }).slice(0, 8);
+    }
+
+    function clearSearchSuggestions() {
+      const wrap = document.getElementById('searchSuggestions');
+      if (!wrap) return;
+      wrap.classList.remove('open');
+      wrap.innerHTML = '';
+    }
+
+    function renderSearchSuggestions() {
+      const wrap = document.getElementById('searchSuggestions');
+      const input = document.getElementById('searchInput');
+      if (!wrap || !input) return;
+      const keyword = input.value.trim();
+      if (!keyword) {
+        clearSearchSuggestions();
+        return;
+      }
+      const items = getSearchSuggestionItems(keyword);
+      if (!items.length) {
+        wrap.innerHTML = '<div class="search-suggestion-empty">검색어가 들어간 매장이 없습니다.</div>';
+        wrap.classList.add('open');
+        return;
+      }
+      wrap.innerHTML = items.map(store => `
+        <div class="search-suggestion-item" onclick="chooseSearchSuggestion('${encodeURIComponent(store.name || '')}')">
+          <div class="search-suggestion-title">${escapeHtml(store.name || '')}</div>
+          <div class="search-suggestion-meta">${escapeHtml(store.address || '-')} ${store.brand ? ' / ' + escapeHtml(store.brand) : ''}</div>
+        </div>
+      `).join('');
+      wrap.classList.add('open');
+    }
+
+    function chooseSearchSuggestion(encodedName) {
+      const name = decodeURIComponent(encodedName || '');
+      const input = document.getElementById('searchInput');
+      if (input) input.value = name;
+      clearSearchSuggestions();
       applyFilters();
     }
 
@@ -1014,13 +1083,13 @@
           .replace(
             /<div class="store-item-title">([\s\S]*?)<\/div>/,
             `<div class="store-item-title-row"><div class="store-item-title">$1</div><button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, false)}</button></div>`
+          )
+          .replace(
+            /<div class="store-item-meta">안내:([\s\S]*?)<\/div>/,
+            `<div class="store-item-meta store-item-status-row"><span>안내:$1</span>${getDistanceBadge(store)}</div>`
           );
 
-        div.innerHTML = renderedCard + `
-          <div class="store-item-footer">
-            ${getDistanceBadge(store)}
-          </div>
-        `;
+        div.innerHTML = renderedCard;
         div.addEventListener('click', () => selectStore(store));
         fragment.appendChild(div);
       });
@@ -1130,6 +1199,7 @@
     function applyFilters() {
       clearPendingInfoWindowOpen();
       if (storeMarkers.length === 0) return alert('매장 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
+      clearSearchSuggestions();
       renderFilterOptions();
       const current = getCurrentFilterValues();
       saveCurrentTabState();
@@ -1169,6 +1239,7 @@
 
     function resetFilters() {
       clearPendingInfoWindowOpen();
+      clearSearchSuggestions();
       document.getElementById('searchInput').value = '';
       currentConfig.filters.forEach(filter => {
         const el = document.getElementById(filter.id);
@@ -1487,7 +1558,20 @@
       openRoadviewAtPosition(clickedPosition, '선택 위치 로드뷰');
     });
 
-    document.getElementById('searchInput').addEventListener('keyup', function(event) { if (event.key === 'Enter') applyFilters(); });
+    document.getElementById('searchInput').addEventListener('input', function() {
+      renderSearchSuggestions();
+    });
+    document.getElementById('searchInput').addEventListener('keyup', function(event) {
+      if (event.key === 'Enter') {
+        clearSearchSuggestions();
+        applyFilters();
+      }
+    });
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.search-box') && !event.target.closest('#searchSuggestions')) {
+        clearSearchSuggestions();
+      }
+    });
     window.addEventListener('load', function() { loadSavedStoreMeta(); resetUiForTab(); loadStoresFromSheet(); relayoutMapSafely(); });
     window.addEventListener('pageshow', function(event) {
       if (event.persisted) relayoutMapSafely();
