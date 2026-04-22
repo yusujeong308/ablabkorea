@@ -69,14 +69,17 @@
     .route-actions button { width: calc(50% - 4px); }
     .sidebar-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; scroll-behavior: smooth; }
     .selected-store { padding: 16px; border-bottom: 1px solid #f0f0f0; background: #fafafa; min-height: 250px; flex-shrink: 0; }
-    .selected-store h2 { margin: 0 0 12px; font-size: 18px; }
+    .selected-store h2 { margin: 0; font-size: 18px; }
+    .selected-store-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
+    .selected-store-title-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .selected-store .row { margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
     .selected-store .label { display: inline-block; width: 72px; font-weight: 700; color: #333; vertical-align: top; }
     .store-list { flex: none; overflow: visible; padding: 8px; }
     .store-item { padding: 12px; border: 1px solid #ececec; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; background: #fff; }
     .store-item:hover { background: #f7f7f7; }
     .store-item.active { border-color: #222; background: #f3f3f3; }
-    .store-item-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .store-item-title { font-size: 15px; font-weight: 700; margin-bottom: 0; }
+    .store-item-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
     .store-item-address { font-size: 13px; color: #555; line-height: 1.4; margin-bottom: 4px; }
     .store-item-detail-address { font-size: 12px; color: #777; line-height: 1.4; margin-bottom: 6px; }
     .store-item-meta { font-size: 12px; color: #666; line-height: 1.5; }
@@ -165,6 +168,7 @@
       .roadview-wrap { top: 56px; right: 12px; left: 12px; width: auto; height: 240px; }
       .roadview-wrap.expanded { top: 56px; left: 12px; right: 12px; width: auto; height: calc(100% - 68px); }
       .store-item-title { font-size: 14px; }
+      .store-item-title-row, .selected-store-title-row { align-items: flex-start; }
       .store-item-address, .store-item-detail-address, .store-item-meta, .selected-store .row, .route-row { font-size: 12px; line-height: 1.5; }
       .route-box { display: block; }
       .selected-store .label { width: 60px; }
@@ -278,9 +282,6 @@
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   <script>
-    function getFavoriteButtonLabel(name, isLarge) {
-  return isFavoriteStore(name) ? '★' : '☆';
-}
     if (window.Kakao && !window.Kakao.isInitialized()) {
       Kakao.init("ca5353f84284c3cb5778577cb87e4f57");
     }
@@ -964,10 +965,12 @@
       const encodedName = encodeURIComponent(store.name || '');
       box.innerHTML = `
         <div class="status-top ${getStatusClass(statusInfo.status)}">${escapeHtml(statusInfo.message)}</div>
-        <h2>${escapeHtml(store.name || '')}</h2>
-        <div class="store-item-footer">
-          ${getDistanceBadge(store)}
-          <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, true)}</button>
+        <div class="selected-store-title-row">
+          <h2>${escapeHtml(store.name || '')}</h2>
+          <div class="selected-store-title-actions">
+            ${getDistanceBadge(store)}
+            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, true)}</button>
+          </div>
         </div>
         ${rows}
         <div class="selected-actions">
@@ -1007,10 +1010,15 @@
         const div = document.createElement('div');
         const encodedName = encodeURIComponent(store.name || '');
         div.className = 'store-item' + (selectedStoreName === store.name ? ' active' : '');
-        div.innerHTML = currentConfig.listRenderer(store, statusInfo) + `
+        const renderedCard = currentConfig.listRenderer(store, statusInfo)
+          .replace(
+            /<div class="store-item-title">([\s\S]*?)<\/div>/,
+            `<div class="store-item-title-row"><div class="store-item-title">$1</div><button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, false)}</button></div>`
+          );
+
+        div.innerHTML = renderedCard + `
           <div class="store-item-footer">
             ${getDistanceBadge(store)}
-            <button type="button" class="favorite-btn ${isFavoriteStore(store.name) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteByEncoded('${encodedName}')">${getFavoriteButtonLabel(store.name, false)}</button>
           </div>
         `;
         div.addEventListener('click', () => selectStore(store));
