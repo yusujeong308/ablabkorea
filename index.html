@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ABLAB 거래처 지도</title>
+  </title>ABLAB 거래처 지도</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f8f9fb; }
@@ -204,7 +204,6 @@
         <div class="filter-grid" id="filterGrid"></div>
 
         <div class="filter-actions">
-          <button type="button" onclick="applyOpenOnlyQuickFilter()">운영중만</button>
           <button type="button" class="secondary" onclick="resetFilters()">필터 초기화</button>
         </div>
 
@@ -581,7 +580,7 @@
       if (!name) return;
       const list = getCurrentRecents().filter(item => item !== name);
       list.unshift(name);
-      recentsByTab[currentAppKey] = list.slice(0, 1);
+      recentsByTab[currentAppKey] = list.slice(0, 2);
       saveStoreMeta();
     }
     function getStoreByName(name) { return storeMarkers.find(store => store.name === name) || null; }
@@ -659,18 +658,10 @@
         userLocationMarker.setPosition(position);
       }
       userLocationMarker.setMap(map);
-      if (userLocationCircle) userLocationCircle.setMap(null);
-      userLocationCircle = new kakao.maps.Circle({
-        center: position,
-        radius: 5000,
-        strokeWeight: 2,
-        strokeColor: '#1c7ed6',
-        strokeOpacity: 0.8,
-        strokeStyle: 'solid',
-        fillColor: '#74c0fc',
-        fillOpacity: 0.12
-      });
-      userLocationCircle.setMap(map);
+      if (userLocationCircle) {
+        userLocationCircle.setMap(null);
+        userLocationCircle = null;
+      }
     }
 
     function renderQuickPanelList(targetId, storesList, emptyText) {
@@ -688,7 +679,8 @@
     }
     function renderQuickPanels() {
       const recentNames = getCurrentRecents();
-      const recentStores = recentNames.map(getStoreByName).filter(Boolean).slice(0, 1);
+      const previousRecentNames = selectedStoreName ? recentNames.filter(name => name !== selectedStoreName) : recentNames;
+      const recentStores = previousRecentNames.map(getStoreByName).filter(Boolean).slice(0, 1);
       const favoritePanel = document.getElementById('favoritePanel');
       const recentPanel = document.getElementById('recentPanel');
       if (favoritePanel) favoritePanel.classList.add('hidden');
@@ -1363,6 +1355,23 @@
       }
     }
 
+    function clearUserLocationVisuals() {
+      if (userLocationMarker) userLocationMarker.setMap(null);
+      if (userLocationCircle) {
+        userLocationCircle.setMap(null);
+        userLocationCircle = null;
+      }
+    }
+
+    function resetMapViewportToDefault() {
+      clearPendingInfoWindowOpen();
+      closeAllInfoWindows();
+      clearUserLocationVisuals();
+      map.setLevel(13);
+      map.setCenter(new kakao.maps.LatLng(36.5, 127.8));
+      relayoutMapSafely();
+    }
+
     function resetUiForTab() {
       document.getElementById('sidebarTitle').textContent = currentConfig.title;
       document.getElementById('searchInput').placeholder = currentConfig.searchPlaceholder;
@@ -1385,6 +1394,7 @@
       currentConfig = APP_CONFIGS[tabKey];
       resetUiForTab();
       loadSavedStoreMeta();
+      resetMapViewportToDefault();
     renderLocationHint();
     updateQuickActionButtons();
     loadStoresFromSheet();
