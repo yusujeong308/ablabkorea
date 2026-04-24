@@ -296,7 +296,7 @@
     </div>
   </div>
 
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services"></script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=ca5353f84284c3cb5778577cb87e4f57&libraries=services,clusterer"></script>
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   <script>
     if (window.Kakao && !window.Kakao.isInitialized()) {
@@ -428,6 +428,7 @@
     let stores = [];
     let storesForFilter = [];
     let storeMarkers = [];
+    let markerClusterer = null;
     let openedInfowindow = null;
     let selectedStoreName = null;
     let currentRoadviewStore = null;
@@ -450,6 +451,25 @@
     const map = new kakao.maps.Map(mapContainer, { center: new kakao.maps.LatLng(36.5, 127.8), level: 13 });
     const zoomControl = new kakao.maps.ZoomControl();
     map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+    markerClusterer = new kakao.maps.MarkerClusterer({
+      map: map,
+      averageCenter: true,
+      minLevel: 8,
+      disableClickZoom: false,
+      styles: [{
+        width: '44px',
+        height: '44px',
+        background: '#222',
+        color: '#fff',
+        borderRadius: '50%',
+        textAlign: 'center',
+        lineHeight: '44px',
+        fontSize: '15px',
+        fontWeight: '700',
+        border: '3px solid #fff',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.25)'
+      }]
+    });
     const roadview = new kakao.maps.Roadview(document.getElementById('roadview'));
     const roadviewClient = new kakao.maps.RoadviewClient();
 
@@ -1105,11 +1125,25 @@
 
     function updateMarkers(results, shouldFitBounds = false) {
       const bounds = new kakao.maps.LatLngBounds();
+      const visibleMarkerList = [];
+
+      if (markerClusterer) markerClusterer.clear();
+
       storeMarkers.forEach(store => {
         const visible = results.includes(store);
-        if (store.marker) store.marker.setMap(visible ? map : null);
-        if (visible) bounds.extend(store.coords);
+        if (store.marker) {
+          store.marker.setMap(null);
+          if (visible) {
+            visibleMarkerList.push(store.marker);
+            bounds.extend(store.coords);
+          }
+        }
       });
+
+      if (markerClusterer && visibleMarkerList.length) {
+        markerClusterer.addMarkers(visibleMarkerList);
+      }
+
       if (results.length > 0 && shouldFitBounds) map.setBounds(bounds);
     }
 
@@ -1305,6 +1339,7 @@
           store.marker.setZIndex(getMarkerZIndex(store));
         }
       });
+      updateMarkers(getDisplayStores(getCurrentFilterValues()), false);
     }
     function togglePinMode() {
       const button = document.getElementById('pinModeToggle');
@@ -1381,6 +1416,7 @@
 
     function resetMapData() {
       clearPendingInfoWindowOpen(); markersBuildTaskId += 1; closeAllInfoWindows();
+      if (markerClusterer) markerClusterer.clear();
       storeMarkers.forEach(store => { if (store.marker) store.marker.setMap(null); });
       storeMarkers = []; openedInfowindow = null; selectedStoreName = null; currentRoadviewStore = null; routeStartStore = null; routeEndStore = null;
       document.getElementById('storeList').innerHTML = ''; renderDefaultMessage(); renderRouteInfo();
@@ -1389,7 +1425,8 @@
     function buildStoreMarker(store, coords) {
       const region = extractRegion(store.address);
       const marker = new kakao.maps.Marker({ position: coords, image: createMarkerImage(getMarkerColor(store)), zIndex: getMarkerZIndex(store) });
-      marker.setMap(map);
+      if (markerClusterer) markerClusterer.addMarker(marker);
+      else marker.setMap(map);
       const storeData = { ...store, region, coords, marker, infowindow: null };
       kakao.maps.event.addListener(marker, 'click', () => selectStore(storeData));
       storeMarkers.push(storeData);
